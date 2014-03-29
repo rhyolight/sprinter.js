@@ -18,6 +18,7 @@ If you're like me, this library might save you an hour a week. I'm a "scrum mast
 Run the following actions across multiple repos:
 
 - list issues 
+- list milestones
 - create milestones 
 - close  milestones 
 
@@ -51,6 +52,15 @@ var Sprinter = require('sprinter');
 Milestones will be grouped by title.
 
     sprinter.getMilestones(function(err, milestones) {
+        console.log(milestones);
+    });
+
+### Creating A Milestone Across All Repos
+
+    sprinter.createMilestones({
+        title: 'Sprint 20',
+        due_on: 'Apr 16, 2014'
+    }, function(err, milestones) {
         console.log(milestones);
     });
 

@@ -174,4 +174,27 @@ Sprinter.prototype.closeMilestones = function(title, mainCallback) {
     });
 };
 
+/**
+ * Creates the same milestone across all monitored repos.
+ * @param milestone {object} Should contain a title and due_on.
+ * @param mainCallback {function} Called with err, created milestones.
+ */
+Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
+    var me = this;
+    this._eachRepo(function(org, repo, localCallback) {
+        var payload = _.extend({
+            user: org,
+            repo: repo
+        }, milestone);
+        me.gh.issues.createMilestone(payload, function(err, result) {
+            if (err) {
+                err.repo = org + '/' + repo;
+                localCallback(err);
+            } else {
+                localCallback(err, result);
+            }
+        });
+    }, mainCallback);
+};
+
 module.exports = Sprinter;
