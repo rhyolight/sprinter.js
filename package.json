@@ -1,11 +1,11 @@
 {
-    "name": "octoshoes",
-    "version": "0.0.1",
+    "name": "sprinter",
+    "version": "0.0.2",
     "author": "Matthew Taylor <rhyolight@gmail.com>",
     "description": "Utilities for operating on issue trackers of several repositories at once.",
-    "main": "octoshoeClient.js",
+    "main": "sprinter.js",
     "keywords": [
-        "github", "issues", "milestones", "agile"
+        "github", "issues", "milestones", "agile", "scrum"
     ],
     "contributors": [{
             "name": "Matt Taylor",
@@ -13,7 +13,7 @@
     }],
     "repository": {
         "type": "git",
-        "url": "git://github.com/rhyolight/octoshoes.git"
+        "url": "git://github.com/rhyolight/sprinter.js.git"
     },
     "dependencies": {
         "underscore" : "1.6.0",

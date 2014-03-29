@@ -30,7 +30,7 @@ function sortIssues(issues) {
  * @param password {string} Github password credential for authentication.
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
  */
-function OctoshoeClient(username, password, repoSlugs) {
+function Sprinter(username, password, repoSlugs) {
     this.username = username;
     this.password = password;
     this.repos = convertSlugsToObjects(repoSlugs);
@@ -45,7 +45,7 @@ function OctoshoeClient(username, password, repoSlugs) {
     });
 }
 
-OctoshoeClient.prototype._eachRepo = function(fn, mainCallback) {
+Sprinter.prototype._eachRepo = function(fn, mainCallback) {
     var funcs = this.repos.map(function(repoSlug) {
         var org = repoSlug[0],
             repo = repoSlug[1];
@@ -56,7 +56,7 @@ OctoshoeClient.prototype._eachRepo = function(fn, mainCallback) {
     async.parallel(funcs, mainCallback);
 };
 
-OctoshoeClient.prototype._eachRepoFlattened = function(fn, mainCallback) {
+Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
     this._eachRepo(fn, function(err, data) {
         mainCallback(err, _.flatten(data));
     });
@@ -69,7 +69,7 @@ OctoshoeClient.prototype._eachRepoFlattened = function(fn, mainCallback) {
  * @param mainCallback {function} Called with err, issues when done. Issues are 
  *                                sorted by updated_at.
  */
-OctoshoeClient.prototype.getIssues = function(userFilters, mainCallback) {
+Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
     var me = this,
         filters;
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
@@ -84,6 +84,7 @@ OctoshoeClient.prototype.getIssues = function(userFilters, mainCallback) {
         });
         me.gh.issues.repoIssues(localFilters, function(err, issues) {
             if (err) {
+                err.repo = org + '/' + repo;
                 localCallback(err);
             } else {
                 localCallback(err, _.map(issues, function(issue) {
@@ -106,7 +107,7 @@ OctoshoeClient.prototype.getIssues = function(userFilters, mainCallback) {
  * standard milestone periods like sprints. 
  * @param mainCallback {function} Called with err, milestones.
  */
-OctoshoeClient.prototype.getMilestones = function(mainCallback) {
+Sprinter.prototype.getMilestones = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
         me.gh.issues.getAllMilestones({
@@ -114,6 +115,7 @@ OctoshoeClient.prototype.getMilestones = function(mainCallback) {
             repo: repo
         }, function(err, milestones) {
             if (err) {
+                err.repo = org + '/' + repo;
                 localCallback(err);
             } else {
                 localCallback(err, _.map(milestones, function(milestone) {
@@ -136,7 +138,7 @@ OctoshoeClient.prototype.getMilestones = function(mainCallback) {
  * @param title {string} Milestone to delete.
  * @param mainCallback {function} Called with err, updated milestones.
  */
-OctoshoeClient.prototype.closeMilestones = function(title, mainCallback) {
+Sprinter.prototype.closeMilestones = function(title, mainCallback) {
     var me = this;
     this.getMilestones(function(err, milestones) {
         var matches = milestones[title];
@@ -156,7 +158,14 @@ OctoshoeClient.prototype.closeMilestones = function(title, mainCallback) {
                             number: match.number,
                             title: match.title,
                             state: 'closed'
-                        }, localCallback);
+                        }, function(err, resp) {
+                            if (err) {
+                                err.repo = org + '/' + repo;
+                                localCallback(err);
+                            } else {
+                                localCallback(err, resp);
+                            }
+                        });
                     };
                 });
                 async.parallel(updaters, mainCallback);
@@ -165,4 +174,4 @@ OctoshoeClient.prototype.closeMilestones = function(title, mainCallback) {
     });
 };
 
-module.exports = OctoshoeClient;
+module.exports = Sprinter;
