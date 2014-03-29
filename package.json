@@ -1,9 +1,14 @@
 {
     "name": "sprinter",
     "version": "0.0.4",
-    "author": "Matthew Taylor <rhyolight@gmail.com>",
+    "author": { 
+        "name" : "Matthew Taylor",
+        "email" : "rhyolight@gmail.com",
+        "url" : "http://about.me/rhyolight"
+    },
     "description": "Utilities for operating on issue trackers of several repositories at once.",
     "main": "sprinter.js",
+    "bin" : { "sprinter" : "./bin/cli.js" },
     "keywords": [
         "github", "issues", "milestones", "agile", "scrum"
     ],
@@ -15,7 +20,11 @@
         "type": "git",
         "url": "git://github.com/rhyolight/sprinter.js.git"
     },
+    "bugs": {
+        "url": "https://github.com/rhyolight/sprinter.js/issues"
+    },
     "dependencies": {
+        "minimist"   : "0.0.8",
         "underscore" : "1.6.0",
         "async"      : "0.4.0",
         "github"     : "0.1.15",
