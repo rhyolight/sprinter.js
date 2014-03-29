@@ -25,7 +25,7 @@ Run the following actions across multiple repos:
 
 [1] There is no [1].
 
-[2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter/issues). 
+[2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter.js/issues). 
 
 ## Installation
 
