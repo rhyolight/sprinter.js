@@ -22,7 +22,9 @@ Run the following actions across multiple repos:
 - create milestones 
 - close  milestones 
 
+
 [1] There is no [1].
+
 [2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter/issues). 
 
 ## Installation
