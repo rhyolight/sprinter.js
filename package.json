@@ -1,0 +1,28 @@
+{
+    "name": "octoshoes",
+    "version": "0.0.1",
+    "author": "Matthew Taylor <rhyolight@gmail.com>",
+    "description": "Utilities for operating on issue trackers of several repositories at once.",
+    "main": "octoshoeClient.js",
+    "keywords": [
+        "github", "issues", "milestones", "agile"
+    ],
+    "contributors": [{
+            "name": "Matt Taylor",
+            "email": "rhyolight@gmail.com"
+    }],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/rhyolight/octoshoes.git"
+    },
+    "dependencies": {
+        "underscore" : "1.6.0",
+        "async"      : "0.4.0",
+        "github"     : "0.1.15",
+        "js-yaml"    : "3.0.2"
+    },
+    "license": "MIT",
+    "engines": {
+        "node": ">=0.10"
+    }
+}
