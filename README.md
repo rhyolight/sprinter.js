@@ -35,7 +35,7 @@ Run the following actions across multiple repos:
 
 ### Creating the Client
 
-var Sprinter = require('sprinter');
+    var Sprinter = require('sprinter');
 
     var sprinter = new Sprinter(
         <username>,
