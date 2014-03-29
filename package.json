@@ -1,6 +1,6 @@
 {
     "name": "sprinter",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "author": "Matthew Taylor <rhyolight@gmail.com>",
     "description": "Utilities for operating on issue trackers of several repositories at once.",
     "main": "sprinter.js",
