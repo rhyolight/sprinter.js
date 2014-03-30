@@ -6,7 +6,7 @@ var fs = require('fs'),
     argv = require('minimist')(process.argv.slice(2)),
     sprinter,
     availableCommands,
-    command, commandArgs,
+    command, commandArgs, kwargs,
     githubUsername, githubPassword,
     monitoredRepos;
 
@@ -17,8 +17,8 @@ availableCommands = {
     closeMilestones: closeMilestonesCli
 };
 
-availableCommands.listIssues.help       = "listIssues\n\t".cyan
-    + "Prints all issues.";
+availableCommands.listIssues.help       = "listIssues [--milestone=\"milestone name\"]\n\t".cyan
+    + "Prints all issues. Optionally filters by milestone name.";
 availableCommands.listMilestones.help   = "listMilestones\n\t".cyan
     + "Prints all milestones.";
 availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t".cyan
@@ -59,6 +59,7 @@ function readRepoFile(path) {
 function processArgs(args) {
     command = args._[0];
     commandArgs = args._.slice(1);
+    kwargs = args;
     if (args.help) {
         printHelp();
         process.exit();
@@ -87,7 +88,10 @@ function exitIfMissingGithubCreds() {
     }
 }
 
-function getIssuesCli(sprinter, command, commandArgs) {
+function getIssuesCli(sprinter, command, commandArgs, kwargs) {
+    if (kwargs.milestone) {
+        commandArgs.push({milestone: kwargs.milestone});
+    }
     commandArgs.push(function(err, issues) {
         // TODO: handle errors.
         formatter.formatIssues(issues);
@@ -95,7 +99,7 @@ function getIssuesCli(sprinter, command, commandArgs) {
     sprinter.getIssues.apply(sprinter, commandArgs)
 }
 
-function getMilestonesCli(sprinter, command, commandArgs) {
+function getMilestonesCli(sprinter, command, commandArgs, kwargs) {
     commandArgs.push(function(err, milestones) {
         // TODO: handle errors.
         formatter.formatMilestones(milestones);
@@ -103,7 +107,7 @@ function getMilestonesCli(sprinter, command, commandArgs) {
     sprinter.getMilestones.apply(sprinter, commandArgs)
 }
 
-function createMilestonesCli(sprinter, command, commandArgs) {
+function createMilestonesCli(sprinter, command, commandArgs, kwargs) {
     var milestone = {
         title: commandArgs[0],
         due_on: commandArgs[1]
@@ -114,7 +118,7 @@ function createMilestonesCli(sprinter, command, commandArgs) {
     });
 }
 
-function closeMilestonesCli(sprinter, command, commandArgs) {
+function closeMilestonesCli(sprinter, command, commandArgs, kwargs) {
     // TODO: error check title
     var title = commandArgs[0];
     sprinter.closeMilestones(title, function(err, milestones) {
@@ -144,4 +148,4 @@ if (! availableCommands[command]) {
     process.exit(-1);
 }
 
-availableCommands[command](sprinter, command, commandArgs);
+availableCommands[command](sprinter, command, commandArgs, kwargs);

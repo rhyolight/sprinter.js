@@ -71,12 +71,17 @@ Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
  */
 Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
     var me = this,
-        filters;
+        filters,
+        milestone;
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
     }
     filters = _.extend({state: 'open'}, userFilters);
+    if (filters.milestone) {
+        milestone = filters.milestone;
+        delete filters.milestone;
+    }
     this._eachRepoFlattened(function(org, repo, localCallback) {
         var localFilters = _.extend(filters, {
             user: org,
@@ -97,6 +102,12 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         if (err) {
             mainCallback(err);
         } else {
+            if (milestone) {
+                issues = _.filter(issues, function(issue) {
+                    if (issue.milestone == null) { return false; }
+                    return issue.milestone.title == milestone;
+                });
+            }
             mainCallback(err, sortIssues(issues));
         }
     });
