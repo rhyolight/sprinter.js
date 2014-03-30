@@ -3,7 +3,7 @@
 <table>
 <tr>
   <td>
-    <img src="https://github.com/numenta/nupic/wiki/images/icons/warning.png"/>
+    <img src="http://maxcdn.fooyoh.com/files/attach/images/591/736/904/004/haters_gonna_hate.gif"/>
   </td>
   <td>
     This library is brand new and un-tested. Battle-testing is under way. 
