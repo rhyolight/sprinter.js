@@ -31,7 +31,7 @@ Run the following actions across multiple repos:
 
     npm install sprinter
 
-Now you can `require('sprinter')` and use as defined below in the [examples](#examples).
+Now you can `require('sprinter')` and use as defined below in the [examples](#examples-of-using-as-a-library).
 
 ### As a command line tool
 
@@ -71,8 +71,34 @@ Displays usage information.
     EXAMPLE
     sprinter createMilestones "Sprint 43" "April 16, 2014" --repo=rhyolight/highlinker,rhyolight/chesster
 
+## CLI Usage
 
-## Examples
+1. Create a file with a list of repositories you want to use sprinter against. It should look something like mine:
+
+    #### `nupic-repos.txt`
+        numenta/nupic
+        numenta/nupic.cerebro
+        numenta/nupic.documents
+        numenta/nupic.core
+        numenta/nupic.fluent
+        numenta/nupic.fluent.server
+        numenta/nupic-linux64
+        numenta/nupic-darwin64
+        numenta/pycept
+        numenta/docker-nupic
+        numenta/nupic.tools
+        numenta/nupic.wallboard
+        numenta/numenta.org
+
+1. Run sprinter commands with the `--repos=` option, pointing to the file.
+
+        $> sprinter listIssues --milestone="Sprint 19" --repos=nupic-repos.txt
+
+    ![Sprinter Sample Output](https://s3-us-west-2.amazonaws.com/public.numenta.org/images/sprinter.png)
+
+1. Run with `--help` for more commands and options.
+
+## Examples Of Using as a Library
 
 ### Creating the Client
 
