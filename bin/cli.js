@@ -57,7 +57,6 @@ function readRepoFile(path) {
 }
 
 function processArgs(args) {
-    // console.info(args);
     command = args._[0];
     commandArgs = args._.slice(1);
     if (args.help) {
@@ -74,8 +73,6 @@ function processArgs(args) {
     } catch (error) {
         monitoredRepos = args.repos.split(',');
     }
-    // console.info(command + ': ' + commandArgs)
-    // console.info(monitoredRepos);
 }
 
 function exitIfMissingGithubCreds() {
@@ -135,30 +132,16 @@ sprinter = new Sprinter(
     monitoredRepos
 );
 
-
-// switch (command) {
-//     case 'listMilestones':
-//         getMilestonesCli(sprinter, command, commandArgs);
-//         break;
-//     case 'createMilestones':
-//         createMilestonesCli(sprinter, command, commandArgs);
-//         break;
-//     case 'closeMilestones':
-//         closeMilestonesCli(sprinter, command, commandArgs);
-//         break;
-//     case 'listIssues':
-//         getIssuesCli(sprinter, command, commandArgs);
-//         break;
-//     default:
-// }
-
 if (! command) {
+    console.error('Missing command!'.red);
     printHelp();
     process.exit();
 }
 
 if (! availableCommands[command]) {
-    console.log('Unknown command "' + command + '".');
+    console.error(('Unknown command "' + command + '"!').red);
     printHelp();
     process.exit(-1);
 }
+
+availableCommands[command](sprinter, command, commandArgs);
