@@ -6,7 +6,7 @@
     <img src="http://maxcdn.fooyoh.com/files/attach/images/591/736/904/004/haters_gonna_hate.gif"/>
   </td>
   <td>
-    <p/>Provides some extended utilities for the Github API for operating against multiple Github issue trackers at once.
+    <p/>Provides some extended utilities for the Github API for operating against <strong>multiple Github issue trackers at once</strong>.
   </td>
 </tr>
 </table>
