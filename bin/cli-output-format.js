@@ -46,14 +46,22 @@ function formatIssues(issues) {
     console.log('\n' + issues.length + ' total issues.');
 }
 
-function formatMilestone(milestone) {
+function formatMilestone(milestones, title) {
     // console.log(typeof(milestone));
     // console.log((milestone));
-    console.log(milestone.title.blue);
+    console.log(title.bold.blue);
+    _.each(milestones, function(milestone) {
+        // console.log(_.keys(milestone));
+        console.log('  ' + milestone.repo.yellow 
+            + (' https://github.com/' + milestone.repo + '/issues').blue
+            + '\n  (' + (milestone.open_issues + ' open').cyan + ') due ' 
+            + moment(milestone.due_on).calendar().red);
+    });
 }
 
 function formatMilestones(milestones) {
-
+    // console.log(milestones)
+    _.each(milestones, formatMilestone);
 }
 
 module.exports = {

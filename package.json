@@ -8,7 +8,7 @@
     },
     "description": "Utilities for operating on issue trackers of several repositories at once.",
     "main": "sprinter.js",
-    "bin" : { "sprinter" : "./bin/cli.js" },
+    "bin" : "./bin/cli.js",
     "keywords": [
         "github", "issues", "milestones", "agile", "scrum"
     ],

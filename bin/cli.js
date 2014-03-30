@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 var fs = require('fs'),
     Sprinter = require('../sprinter'),
     formatter = require('./cli-output-format'),
@@ -51,7 +52,7 @@ function getIssuesCli(sprinter, command, commandArgs) {
 function getMilestonesCli(sprinter, command, commandArgs) {
     commandArgs.push(function(err, milestones) {
         // TODO: handle errors.
-        console.log(milestones);
+        formatter.formatMilestones(milestones);
     });
     sprinter.getMilestones.apply(sprinter, commandArgs)
 }
