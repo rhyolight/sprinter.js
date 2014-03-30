@@ -29,7 +29,21 @@ Run the following actions across multiple repos:
 
 ## Installation
 
+### As a library for local scripts
+
     npm install sprinter
+
+Now you can `require('sprinter')` and use as defined below in the [examples](#examples).
+
+### As a command line tool
+
+    npm install -g sprinter
+
+Now you can run `sprinter` from the command line. 
+
+    sprinter --help
+
+Displays usage information. 
 
 ## Examples
 

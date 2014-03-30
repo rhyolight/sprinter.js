@@ -1,12 +1,52 @@
 #!/usr/bin/env node
 var fs = require('fs'),
+    _ = require('underscore'),
     Sprinter = require('../sprinter'),
     formatter = require('./cli-output-format'),
     argv = require('minimist')(process.argv.slice(2)),
     sprinter,
+    availableCommands,
     command, commandArgs,
     githubUsername, githubPassword,
     monitoredRepos;
+
+availableCommands = {
+    listIssues: getIssuesCli,
+    listMilestones: getMilestonesCli,
+    createMilestones: createMilestonesCli,
+    closeMilestones: closeMilestonesCli
+};
+
+availableCommands.listIssues.help       = "listIssues\n\t".cyan
+    + "Prints all issues.";
+availableCommands.listMilestones.help   = "listMilestones\n\t".cyan
+    + "Prints all milestones.";
+availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t".cyan
+    + "Creates new milestone in each repo with given title and due date.\n"
+    + "\t`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.";
+availableCommands.closeMilestones.help  = "closeMilestones <title>\n\t".cyan
+    + "Closes all milestones matching title across all repos.";
+
+function printHelp() {
+    var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers " 
+        + "of several repositories at once.\n\n"
+        + "REQUIREMENTS\n".underline
+        + "Environment variables with the Github username and password for API calls:\n"
+        + "\tGH_USERNAME=<username>\n".grey
+        + "\tGH_PASSWORD=<password>\n".grey
+        + "\nUSAGE\n".underline
+        + "    sprinter <command> <cmd-options> --repo=org/repo,org2/repo2\n".yellow
+        + " or\n"
+        + "    sprinter <command> <cmd-options> --repo=./path/to/repo/file\n\n".yellow
+        + "The repo file should have one repo slug on each line.\n"
+    console.log(help);
+    console.log('COMMANDS'.underline);
+    _.each(availableCommands, function(fn, command) {
+        console.log(fn.help);
+    });
+    console.log('\nEXAMPLE'.underline);
+    console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repo=rhyolight/highlinker,rhyolight/chesster'.yellow);
+}
 
 function readRepoFile(path) {
     if (fs.existsSync(path)) {
@@ -20,6 +60,15 @@ function processArgs(args) {
     // console.info(args);
     command = args._[0];
     commandArgs = args._.slice(1);
+    if (args.help) {
+        printHelp();
+        process.exit();
+    }
+    if (! args.repos) {
+        console.error('Missing --repos option!'.red);
+        printHelp();
+        process.exit(-1);
+    }
     try {
         monitoredRepos = readRepoFile(args.repos);
     } catch (error) {
@@ -33,10 +82,10 @@ function exitIfMissingGithubCreds() {
     githubUsername = process.env['GH_USERNAME'];
     githubPassword = process.env['GH_PASSWORD'];
     if (! githubUsername || ! githubPassword) {
-        console.error('You must set your Github credentials into the '
-            + 'environment for this script to run.\n'
-            + '    export GH_USERNAME=<username>\n'
-            + '    export GH_USERNAME=<username>');
+        console.error(('You must set your Github credentials into the '
+                    + 'environment for this script to run.\n'
+                    + '    export GH_USERNAME=<username>\n'
+                    + '    export GH_USERNAME=<username>').red);
         process.exit(-1);
     }
 }
@@ -86,19 +135,30 @@ sprinter = new Sprinter(
     monitoredRepos
 );
 
-switch (command) {
-    case 'listMilestones':
-        getMilestonesCli(sprinter, command, commandArgs);
-        break;
-    case 'createMilestones':
-        createMilestonesCli(sprinter, command, commandArgs);
-        break;
-    case 'closeMilestones':
-        closeMilestonesCli(sprinter, command, commandArgs);
-        break;
-    case 'listIssues':
-        getIssuesCli(sprinter, command, commandArgs);
-        break;
-    default:
-        console.log('Unknown command "' + command + '".');
+
+// switch (command) {
+//     case 'listMilestones':
+//         getMilestonesCli(sprinter, command, commandArgs);
+//         break;
+//     case 'createMilestones':
+//         createMilestonesCli(sprinter, command, commandArgs);
+//         break;
+//     case 'closeMilestones':
+//         closeMilestonesCli(sprinter, command, commandArgs);
+//         break;
+//     case 'listIssues':
+//         getIssuesCli(sprinter, command, commandArgs);
+//         break;
+//     default:
+// }
+
+if (! command) {
+    printHelp();
+    process.exit();
+}
+
+if (! availableCommands[command]) {
+    console.log('Unknown command "' + command + '".');
+    printHelp();
+    process.exit(-1);
 }
