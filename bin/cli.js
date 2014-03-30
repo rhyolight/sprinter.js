@@ -1,5 +1,6 @@
 var fs = require('fs'),
     Sprinter = require('../sprinter'),
+    formatter = require('./cli-output-format'),
     argv = require('minimist')(process.argv.slice(2)),
     sprinter,
     command, commandArgs,
@@ -15,7 +16,7 @@ function readRepoFile(path) {
 }
 
 function processArgs(args) {
-    console.info(args);
+    // console.info(args);
     command = args._[0];
     commandArgs = args._.slice(1);
     try {
@@ -23,8 +24,8 @@ function processArgs(args) {
     } catch (error) {
         monitoredRepos = args.repos.split(',');
     }
-    console.info(command + ': ' + commandArgs)
-    console.info(monitoredRepos);
+    // console.info(command + ': ' + commandArgs)
+    // console.info(monitoredRepos);
 }
 
 function exitIfMissingGithubCreds() {
@@ -42,7 +43,7 @@ function exitIfMissingGithubCreds() {
 function getIssuesCli(sprinter, command, commandArgs) {
     commandArgs.push(function(err, issues) {
         // TODO: handle errors.
-        console.log(issues);
+        formatter.formatIssues(issues);
     });
     sprinter.getIssues.apply(sprinter, commandArgs)
 }

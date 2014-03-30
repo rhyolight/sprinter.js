@@ -19,7 +19,7 @@ function convertSlugsToObjects(slugs) {
 function sortIssues(issues) {
     return _.sortBy(issues, function(issue) {
         return new Date(issue.updated_at);
-    });
+    }).reverse();
 }
 
 /**

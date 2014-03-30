@@ -24,6 +24,8 @@
         "url": "https://github.com/rhyolight/sprinter.js/issues"
     },
     "dependencies": {
+        "colors"     : "0.6.2",
+        "moment"     : "2.5.1",
         "minimist"   : "0.0.8",
         "underscore" : "1.6.0",
         "async"      : "0.4.0",
