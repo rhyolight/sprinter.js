@@ -28,7 +28,7 @@ availableCommands.closeMilestones.help  = "closeMilestones <title>\n\t".cyan
     + "Closes all milestones matching title across all repos.";
 
 function printHelp() {
-    var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers " 
+    var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers "
         + "of several repositories at once.\n\n"
         + "REQUIREMENTS\n".underline
         + "Environment variables with the Github username and password for API calls:\n"
@@ -46,6 +46,12 @@ function printHelp() {
     });
     console.log('\nEXAMPLE'.underline);
     console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repo=rhyolight/highlinker,rhyolight/chesster'.yellow);
+}
+
+function handleError(message, exitCode) {
+    console.error(message.red);
+    printHelp();
+    process.exit(exitCode);
 }
 
 function readRepoFile(path) {
@@ -94,6 +100,11 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
     }
     commandArgs.push(function(err, issues) {
         // TODO: handle errors.
+        if (err) {
+            if (err.code == 404 && err.repo) {
+                handleError('Unknown repository: "' + err.repo + '"', -1);
+            }
+        }
         formatter.formatIssues(issues);
     });
     sprinter.getIssues.apply(sprinter, commandArgs)
@@ -137,15 +148,11 @@ sprinter = new Sprinter(
 );
 
 if (! command) {
-    console.error('Missing command!'.red);
-    printHelp();
-    process.exit();
+    handleError('Missing command!');
 }
 
 if (! availableCommands[command]) {
-    console.error(('Unknown command "' + command + '"!').red);
-    printHelp();
-    process.exit(-1);
+    handleError('Unknown command "' + command + '"!', -1);
 }
 
 availableCommands[command](sprinter, command, commandArgs, kwargs);
