@@ -17,7 +17,8 @@ availableCommands = {
     closeMilestones: closeMilestonesCli
 };
 
-availableCommands.listIssues.help       = "listIssues [--milestone=\"milestone name\"]\n\t".cyan
+availableCommands.listIssues.help       = "listIssues [--milestone=\"milestone name\"] "
+    + "[--assignee=\"github username\"]\n\t".cyan
     + "Prints all issues. Optionally filters by milestone name.";
 availableCommands.listMilestones.help   = "listMilestones\n\t".cyan
     + "Prints all milestones.";
