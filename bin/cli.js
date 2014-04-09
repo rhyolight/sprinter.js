@@ -95,9 +95,15 @@ function exitIfMissingGithubCreds() {
 }
 
 function getIssuesCli(sprinter, command, commandArgs, kwargs) {
+    // We're selective about what command line keyword options are passed along.
+    var filters = {};
     if (kwargs.milestone) {
-        commandArgs.push({milestone: kwargs.milestone});
+        filters.milestone = kwargs.milestone;
     }
+    if (kwargs.assignee) {
+        filters.assignee = kwargs.assignee;
+    }
+    commandArgs.push(filters);
     commandArgs.push(function(err, issues) {
         // TODO: handle errors.
         if (err) {
