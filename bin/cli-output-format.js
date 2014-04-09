@@ -14,11 +14,17 @@ function shorten(msg, length) {
 function formatIssue(issue) {
     var labels = issue.labels.map(function(label) {
         return label.name.grey;
-    });
+    }).join(', '), assignee = 'None';
+    if (issue.assignee) {
+        assignee = issue.assignee.login;
+    }
+    if (! labels) {
+        labels = "<<NO LABELS>>".magenta;
+    }
     console.log('  ' + ('★' + shorten(issue.title)).bold.cyan);
-    console.log('    author : ' + issue.user.login.magenta
-        + ' (' + labels.join(', ') + ')');
-    console.log('    created: ' + moment(issue.created_at).calendar().red 
+    console.log('    assignee : ' + assignee
+        + ' (' + labels + ')');
+    console.log('    created  : ' + moment(issue.created_at).calendar().red
         + '   updated: ' + moment(issue.updated_at).calendar().red);
     console.log('    ' + issue.html_url.blue);
 }
@@ -36,7 +42,7 @@ function formatIssues(issues) {
         var byProject = _.groupBy(issues, function(issue) {
             return issue.repo;
         });
-        console.log('\n' + milestone.bold.underline.blue 
+        console.log('\n' + milestone.bold.underline.blue
             + ' (' + issues.length + ')');
         _.each(byProject, function(projectIssues, repo) {
             console.log(repo.yellow + ' (' + projectIssues.length + ')');
@@ -52,9 +58,9 @@ function formatMilestone(milestones, title) {
     console.log(title.bold.blue);
     _.each(milestones, function(milestone) {
         // console.log(_.keys(milestone));
-        console.log('  ' + milestone.repo.yellow 
+        console.log('  ' + milestone.repo.yellow
             + (' https://github.com/' + milestone.repo + '/issues').blue
-            + '\n  (' + (milestone.open_issues + ' open').cyan + ') due ' 
+            + '\n  (' + (milestone.open_issues + ' open').cyan + ') due '
             + moment(milestone.due_on).calendar().red);
     });
 }
