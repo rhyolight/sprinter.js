@@ -23,9 +23,9 @@ function sortIssues(issues) {
 }
 
 /**
- * Wrapper class around the Github API client, providing some authentication 
+ * Wrapper class around the Github API client, providing some authentication
  * convenience and additional utility functions for executing operations across
- * the issue trackers of several repositories at once. 
+ * the issue trackers of several repositories at once.
  * @param username {string} Github username credential for authentication.
  * @param password {string} Github password credential for authentication.
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
@@ -66,7 +66,7 @@ Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
  * Returns all issues across all monitored repos. Optional filters can be provided
  * to filter results.
  * @param [userFilters] {object} Filter, like {state: 'closed'}.
- * @param mainCallback {function} Called with err, issues when done. Issues are 
+ * @param mainCallback {function} Called with err, issues when done. Issues are
  *                                sorted by updated_at.
  */
 Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
@@ -115,7 +115,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 
 /**
  * Returns all milestones across monitored repos, grouped by title. Useful for
- * standard milestone periods like sprints. 
+ * standard milestone periods like sprints.
  * @param mainCallback {function} Called with err, milestones.
  */
 Sprinter.prototype.getMilestones = function(mainCallback) {
@@ -152,10 +152,11 @@ Sprinter.prototype.getMilestones = function(mainCallback) {
 Sprinter.prototype.closeMilestones = function(title, mainCallback) {
     var me = this;
     this.getMilestones(function(err, milestones) {
-        var matches = milestones[title];
+        var matches;
         if (err) {
             mainCallback(err);
         } else {
+            matches = milestones[title];
             if (! matches) {
                 mainCallback(null, []);
             } else {
