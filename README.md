@@ -15,15 +15,19 @@ If you're like me, this library might save you an hour a week. I'm a "scrum mast
 
 Run the following actions across multiple repos:
 
-- list issues 
+- list issues
 - list milestones
-- create milestones 
-- close  milestones 
+- create milestones
+- close  milestones
 
 
 [1] There is no [1].
 
-[2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter.js/issues). 
+[2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter.js/issues).
+
+## Example Usage
+
+Sprinter is used as the backend to report on issues across all the repositories in the [Numenta Github Organization](https://github.com/numenta/) on our [status board](http://status.numenta.org/issues.html).
 
 ## Installation
 
@@ -37,11 +41,11 @@ Now you can `require('sprinter')` and use as defined below in the [examples](#ex
 
     npm install -g sprinter
 
-Now you can run `sprinter` from the command line. 
+Now you can run `sprinter` from the command line.
 
     sprinter --help
 
-Displays usage information. 
+Displays usage information.
 
     Sprinter CLI Tool: Utilities for operating on issue trackers of several repositories at once.
 
@@ -85,7 +89,6 @@ Displays usage information.
         numenta/nupic-linux64
         numenta/nupic-darwin64
         numenta/pycept
-        numenta/docker-nupic
         numenta/nupic.tools
         numenta/nupic.wallboard
         numenta/numenta.org

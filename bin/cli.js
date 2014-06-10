@@ -36,9 +36,9 @@ function printHelp() {
         + "\tGH_USERNAME=<username>\n".grey
         + "\tGH_PASSWORD=<password>\n".grey
         + "\nUSAGE\n".underline
-        + "    sprinter <command> <cmd-options> --repo=org/repo,org2/repo2\n".yellow
+        + "    sprinter <command> <cmd-options> --repos=org/repo,org2/repo2\n".yellow
         + " or\n"
-        + "    sprinter <command> <cmd-options> --repo=./path/to/repo/file\n\n".yellow
+        + "    sprinter <command> <cmd-options> --repos=./path/to/repo/file\n\n".yellow
         + "The repo file should have one repo slug on each line.\n"
     console.log(help);
     console.log('COMMANDS'.underline);
@@ -46,7 +46,7 @@ function printHelp() {
         console.log(fn.help);
     });
     console.log('\nEXAMPLE'.underline);
-    console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repo=rhyolight/highlinker,rhyolight/chesster'.yellow);
+    console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster'.yellow);
 }
 
 function handleError(message, exitCode) {
@@ -131,7 +131,9 @@ function createMilestonesCli(sprinter, command, commandArgs, kwargs) {
         due_on: commandArgs[1]
     };
     sprinter.createMilestones(milestone, function(err, milestones) {
-        // TODO: handle errors.
+        if (err) {
+            return console.error(err);
+        }
         console.log(milestones);
     });
 }
