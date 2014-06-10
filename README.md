@@ -51,29 +51,29 @@ Displays usage information.
 
     REQUIREMENTS
     Environment variables with the Github username and password for API calls:
-        GH_USERNAME=<username>
-        GH_PASSWORD=<password>
+    	GH_USERNAME=<username>
+    	GH_PASSWORD=<password>
 
     USAGE
-        sprinter <command> <cmd-options> --repo=org/repo,org2/repo2
+        sprinter <command> <cmd-options> --repos=org/repo,org2/repo2
      or
-        sprinter <command> <cmd-options> --repo=./path/to/repo/file
+        sprinter <command> <cmd-options> --repos=./path/to/repo/file
 
     The repo file should have one repo slug on each line.
 
     COMMANDS
-    listIssues
-        Prints all issues.
+    listIssues [--milestone="milestone name"] [--assignee="github username"]
+    	Prints all issues. Optionally filters by milestone name.
     listMilestones
-        Prints all milestones.
+    	Prints all milestones.
     createMilestones <title> <due_on>
-        Creates new milestone in each repo with given title and due date.
-        `due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
+    	Creates new milestone in each repo with given title and due date.
+    	`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
     closeMilestones <title>
-        Closes all milestones matching title across all repos.
+    	Closes all milestones matching title across all repos.
 
     EXAMPLE
-    sprinter createMilestones "Sprint 43" "April 16, 2014" --repo=rhyolight/highlinker,rhyolight/chesster
+    sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
 
 ## CLI Usage
 
