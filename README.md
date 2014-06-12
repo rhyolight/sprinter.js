@@ -19,6 +19,7 @@ Run the following actions across multiple repos:
 - list milestones
 - create milestones
 - close  milestones
+- create labels
 
 
 [1] There is no [1].
@@ -143,4 +144,26 @@ Closes all milestones with the title `Sprint 18` across all monitored repos.
     sprinter.closeMilestones('Sprint 18', function(err, closed) {
         console.log('Closed milestones:');
         console.log(closed);
+    });
+
+
+### Creating Labels Across All Repos
+
+    var labels = [
+        {
+            name: "cleanup",
+            color: "c7def8"
+        },
+        {
+            name: "newbie",
+            color: "bfe5bf"
+        },
+        {
+            name: "tests",
+            color: "fad8c7"
+        }
+    ]
+    
+    sprinter.createLabels(labels, function (err, labels) {
+        console.log(labels);
     });

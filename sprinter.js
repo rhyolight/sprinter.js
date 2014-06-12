@@ -209,4 +209,25 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
     }, mainCallback);
 };
 
+/**
+ * Creates the same labels across all monitored repos.
+ * @param labels {Array} Should be a list of objects, each with a name and hex color (without the #).
+ * @param mainCallback {function} Called with err, created labels.
+ */
+Sprinter.prototype.createLabels = function(labels, mainCallback) {
+    var me = this;
+    this._eachRepo(function(org, repo, localCallback) {
+        var createFunctions = _.map(labels, function(labelSpec) {
+            var payload = _.extend({
+                user: org,
+                repo: repo,
+            }, labelSpec);
+            return function(callback) {
+                me.gh.issues.createLabel(payload, callback);
+            };
+        });
+        async.parallel(createFunctions, localCallback);
+    }, mainCallback);
+};
+
 module.exports = Sprinter;
