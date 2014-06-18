@@ -1,6 +1,6 @@
 {
     "name": "sprinter",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "author": {
         "name" : "Matthew Taylor",
         "email" : "rhyolight@gmail.com",
@@ -8,6 +8,9 @@
     },
     "description": "Utilities for operating on issue trackers of several repositories at once.",
     "main": "sprinter.js",
+    "scripts": {
+        "test": "istanbul cover _mocha -- --recursive -R spec && istanbul report text-summary > coverage/summary.txt && cat coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js"
+    },
     "bin" : "./bin/cli.js",
     "keywords": [
         "github", "issues", "milestones", "agile", "scrum"
@@ -31,6 +34,14 @@
         "async"      : "0.4.0",
         "github"     : "0.1.15",
         "js-yaml"    : "3.0.2"
+    },
+    "devDependencies": {
+        "proxyquire"    : "0.5.x",
+        "mocha"         : "1.12.x",
+        "istanbul"      : "0.1.x",
+        "sinon"         : "1.7.x",
+        "chai"          : "1.9.x",
+        "coveralls"     : "2.10.0"
     },
     "license": "MIT",
     "engines": {

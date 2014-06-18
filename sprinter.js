@@ -31,8 +31,18 @@ function sortIssues(issues) {
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
  */
 function Sprinter(username, password, repoSlugs) {
+    if (! username) {
+        throw new Error('Missing username.');
+    }
+    if (! password) {
+        throw new Error('Missing password.');
+    }
+    if (! repoSlugs) {
+        throw new Error('Missing repositories.');
+    }
     this.username = username;
     this.password = password;
+    // Verify required configuration elements.
     this.repos = convertSlugsToObjects(repoSlugs);
     this.gh = new GitHubApi({
         version: '3.0.0',
