@@ -1,4 +1,4 @@
-# Sprinter
+# Sprinter [![Build Status](https://travis-ci.org/rhyolight/sprinter.js.svg?branch=master)](https://travis-ci.org/rhyolight/sprinter.js) [![Coverage Status](https://coveralls.io/repos/rhyolight/sprinter.js/badge.png)](https://coveralls.io/r/rhyolight/sprinter.js)
 
 <table>
 <tr>
