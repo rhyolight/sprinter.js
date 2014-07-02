@@ -230,7 +230,7 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
         var createFunctions = _.map(labels, function(labelSpec) {
             var payload = _.extend({
                 user: org,
-                repo: repo,
+                repo: repo
             }, labelSpec);
             return function(callback) {
                 me.gh.issues.createLabel(payload, callback);
