@@ -1,5 +1,7 @@
 var assert = require('chai').assert,
     expect = require('chai').expect,
+    mockNupicIssues = require('./mock-data/nupic-issues'),
+    mockSprinterIssues = require('./mock-data/sprinter-issues'),
     proxyquire = require('proxyquire');
 
 describe('sprinter', function() {
@@ -52,6 +54,45 @@ describe('sprinter', function() {
                 assert.ok(authenticated, 'Sprinter did not authenticate upon construction.');
             });
 
+        });
+
+    });
+
+    describe('when fetching issues', function() {
+        var mockGithubInstance = {
+            authenticate: function() {},
+            issues: {
+                repoIssues: function(params, callback) {
+                    expect(params).to.be.instanceOf(Object, 'Github client given no parameters.');
+                    expect(params).to.have.keys(['user', 'repo', 'state'], 'Github params are missing data.');
+                    assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                    assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
+                    expect(params.state).to.equal('open', 'Default state filter was not "open".');
+                    if (params.user == 'numenta' && params.repo == 'nupic') {
+                        callback(null, mockNupicIssues);
+                    } else if (params.user == 'rhyolight' && params.repo == 'sprinter.js') {
+                        callback(null, mockSprinterIssues);
+                    } else {
+                        assert.fail('Unknown repo "' + params.user + '/' + params.repo + '".');
+                    }
+                }
+            }
+        };
+
+        var Sprinter = proxyquire('../sprinter', {
+            'github': function () {
+                return mockGithubInstance;
+            }
+        });
+
+        it('fetches issues from all repos', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+            sprinter.getIssues(function(err, issues) {
+                expect(err).to.not.exist;
+                expect(issues).to.have.length(33, 'Wrong length of returned issues.');
+                done();
+            });
         });
 
     });
