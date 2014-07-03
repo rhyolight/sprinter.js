@@ -2,6 +2,8 @@ var assert = require('chai').assert,
     expect = require('chai').expect,
     mockNupicIssues = require('./mock-data/nupic-issues'),
     mockSprinterIssues = require('./mock-data/sprinter-issues'),
+    mockNumentaMilestonesCreated = require('./mock-data/numenta-milestone-created'),
+    mockRhyolightMilestonesCreated = require('./mock-data/rhyolight-milestone-created'),
     proxyquire = require('proxyquire');
 
 describe('sprinter', function() {
@@ -91,6 +93,48 @@ describe('sprinter', function() {
             sprinter.getIssues(function(err, issues) {
                 expect(err).to.not.exist;
                 expect(issues).to.have.length(33, 'Wrong length of returned issues.');
+                done();
+            });
+        });
+
+    });
+
+    describe('when creating milestones', function() {
+        var mockGithubInstance = {
+            authenticate: function() {},
+                issues: {
+                    createMilestone: function(params, callback) {
+                        expect(params).to.be.instanceOf(Object, 'Github client given no parameters.');
+                        expect(params).to.have.keys(['user', 'repo', 'title', 'due_on'], 'Github params are missing data.');
+                        assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                        expect(params.repo).to.equal('experiments');
+                        expect(params.title).to.equal('Test Milestone');
+                        expect(params.due_on).to.equal('Apr 16, 2015');
+                        if (params.user == 'rhyolight' && params.repo == 'experiments') {
+                            callback(null, mockRhyolightMilestonesCreated);
+                        } else if (params.user == 'numenta' && params.repo == 'experiments') {
+                            callback(null, mockNumentaMilestonesCreated);
+                        } else {
+                            assert.fail('Unknown repo "' + params.user + '/' + params.repo + '".');
+                        }
+                    }
+                }
+        };
+
+        var Sprinter = proxyquire('../sprinter', {
+            'github': function () {
+                return mockGithubInstance;
+            }
+        });
+
+        it('creates milestone on each repo', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/experiments','rhyolight/experiments']);
+            sprinter.createMilestones({
+                title: 'Test Milestone',
+                due_on: 'Apr 16, 2015'
+            }, function(err, milestones) {
+                expect(err).to.not.exist;
+                expect(milestones).to.have.length(2, 'Wrong length of returned milestones.');
                 done();
             });
         });
