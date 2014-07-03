@@ -14,7 +14,8 @@ availableCommands = {
     listIssues: getIssuesCli,
     listMilestones: getMilestonesCli,
     createMilestones: createMilestonesCli,
-    closeMilestones: closeMilestonesCli
+    closeMilestones: closeMilestonesCli,
+    updateMilestones: updateMilestonesCli
 };
 
 availableCommands.listIssues.help       = "listIssues [--milestone=\"milestone name\"] "
@@ -27,6 +28,8 @@ availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t
     + "\t`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.";
 availableCommands.closeMilestones.help  = "closeMilestones <title>\n\t".cyan
     + "Closes all milestones matching title across all repos.";
+availableCommands.updateMilestones.help  = "updateMilestones <title> <new-title> [due_on]\n\t".cyan
+    + "Updates all milestones matching title across all repos.";
 
 function printHelp() {
     var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers "
@@ -56,14 +59,21 @@ function handleError(message, exitCode) {
 }
 
 function readRepoFile(path) {
+    var lines = undefined;
     if (fs.existsSync(path)) {
-        return fs.readFileSync(path, 'utf8').trim().split('\n');
+        lines = fs.readFileSync(path, 'utf8').trim().split('\n');
+        lines = _.filter(lines, function(line) {
+            var trimmed = line.trim();
+            return trimmed.length && trimmed.indexOf('#') != 0;
+        });
     } else {
         throw new Error('"' + path + '" is not a path to a file.');
     }
+    return lines;
 }
 
 function processArgs(args) {
+    var repoValue = undefined;
     command = args._[0];
     commandArgs = args._.slice(1);
     kwargs = args;
@@ -71,15 +81,21 @@ function processArgs(args) {
         printHelp();
         process.exit();
     }
-    if (! args.repos) {
-        console.error('Missing --repos option!'.red);
+    if (args.repos) {
+        repoValue = args.repos;
+    } else {
+        repoValue = process.env['SPRINTER_REPOS'];
+    }
+    if (! repoValue) {
+        console.error('Cannot identify target repositories! Provide either a --repos option or set the ' +
+            '$SPRINTER_REPOS environment variable.'.red);
         printHelp();
         process.exit(-1);
     }
     try {
-        monitoredRepos = readRepoFile(args.repos);
+        monitoredRepos = readRepoFile(repoValue);
     } catch (error) {
-        monitoredRepos = args.repos.split(',');
+        monitoredRepos = repoValue.split(',');
     }
 }
 
@@ -131,6 +147,22 @@ function createMilestonesCli(sprinter, command, commandArgs, kwargs) {
         due_on: commandArgs[1]
     };
     sprinter.createMilestones(milestone, function(err, milestones) {
+        if (err) {
+            return console.error(err);
+        }
+        console.log(milestones);
+    });
+}
+
+function updateMilestonesCli(sprinter, command, commandArgs, kwargs) {
+    var oldTitle = commandArgs[0],
+        milestone = {
+            title: commandArgs[1]
+        };
+    if (commandArgs.length > 2) {
+        milestone.due_on = commandArgs[2];
+    }
+    sprinter.updateMilestones(oldTitle, milestone, function(err, milestones) {
         if (err) {
             return console.error(err);
         }

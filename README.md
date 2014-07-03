@@ -72,6 +72,8 @@ Displays usage information.
     	`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
     closeMilestones <title>
     	Closes all milestones matching title across all repos.
+    updateMilestones <title> <new-title> [due_on]
+        Updates all milestones matching title across all repos.
 
     EXAMPLE
     sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
@@ -83,18 +85,29 @@ Displays usage information.
 1. Create a file with a list of repositories you want to use sprinter against. It should look something like mine:
 
     #### `nupic-repos.txt`
+    
         numenta/nupic
         numenta/nupic.cerebro
         numenta/nupic.documents
+        # You can add comments 
         numenta/nupic.core
         numenta/nupic.fluent
         numenta/nupic.fluent.server
         numenta/nupic-linux64
         numenta/nupic-darwin64
+        
+        # Whitespace between lines is okay
+        
         numenta/pycept
         numenta/nupic.tools
         numenta/nupic.wallboard
         numenta/numenta.org
+        
+    You can also provide the list of repositories directly with the `--repos` option:
+    
+        $> sprinter listIssues --milestone="Sprint 19" --repos=org1/repo1,org1/repo2
+    
+    If you don't want to always specify the `--repos` option, set the same value into the `$SPRINTER_REPOS` environment variable. If `--repos` is not given with a CLI command, the `$SPRINTER_REPOS` value will be used instead.
 
 1. Run sprinter commands with the `--repos=` option, pointing to the file.
 
