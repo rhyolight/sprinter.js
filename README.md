@@ -49,20 +49,23 @@ Now you can run `sprinter` from the command line.
 Displays usage information.
 
     Sprinter CLI Tool: Utilities for operating on issue trackers of several repositories at once.
-
+    
     REQUIREMENTS
     Environment variables with the Github username and password for API calls:
     	GH_USERNAME=<username>
     	GH_PASSWORD=<password>
-
+    
     USAGE
         sprinter <command> <cmd-options> --repos=org/repo,org2/repo2
      or
         sprinter <command> <cmd-options> --repos=./path/to/repo/file
-
-    The repo file should have one repo slug on each line.
-
+    
+    The repo file should have one repo slug on each line. Instead of providing a --repos option, you could
+    set the $SPRINTER_REPOS environment variable instead.
+    
     COMMANDS
+    printRepos
+    	Prints the repositories Sprinter is configured to run against.
     listIssues [--milestone="milestone name"] [--assignee="github username"]
     	Prints all issues. Optionally filters by milestone name.
     listMilestones
@@ -73,8 +76,8 @@ Displays usage information.
     closeMilestones <title>
     	Closes all milestones matching title across all repos.
     updateMilestones <title> <new-title> [due_on]
-        Updates all milestones matching title across all repos.
-
+    	Updates all milestones matching title across all repos.
+    
     EXAMPLE
     sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
 

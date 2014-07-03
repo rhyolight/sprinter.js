@@ -11,6 +11,7 @@ var fs = require('fs'),
     monitoredRepos;
 
 availableCommands = {
+    printRepos: printReposCli,
     listIssues: getIssuesCli,
     listMilestones: getMilestonesCli,
     createMilestones: createMilestonesCli,
@@ -30,6 +31,8 @@ availableCommands.closeMilestones.help  = "closeMilestones <title>\n\t".cyan
     + "Closes all milestones matching title across all repos.";
 availableCommands.updateMilestones.help  = "updateMilestones <title> <new-title> [due_on]\n\t".cyan
     + "Updates all milestones matching title across all repos.";
+availableCommands.printRepos.help  = "printRepos\n\t".cyan
+    + "Prints the repositories Sprinter is configured to run against.";
 
 function printHelp() {
     var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers "
@@ -42,7 +45,8 @@ function printHelp() {
         + "    sprinter <command> <cmd-options> --repos=org/repo,org2/repo2\n".yellow
         + " or\n"
         + "    sprinter <command> <cmd-options> --repos=./path/to/repo/file\n\n".yellow
-        + "The repo file should have one repo slug on each line.\n"
+        + "The repo file should have one repo slug on each line. Instead of providing a --repos option, you could \n"
+        + "set the $SPRINTER_REPOS environment variable instead.\n"
     console.log(help);
     console.log('COMMANDS'.underline);
     _.each(availableCommands, function(fn, command) {
@@ -109,6 +113,14 @@ function exitIfMissingGithubCreds() {
                     + '    export GH_USERNAME=<username>').red);
         process.exit(-1);
     }
+}
+
+function printReposCli(sprinter, command, commandArgs, kwargs) {
+    console.log("Sprinter is executing commands across the following repositories:");
+    console.log("=================================================================");
+    monitoredRepos.forEach(function(repo) {
+        console.log(repo);
+    });
 }
 
 function getIssuesCli(sprinter, command, commandArgs, kwargs) {
