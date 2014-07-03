@@ -220,6 +220,68 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
 };
 
 /**
+ * Updates the same milestone across all monitored repos.
+ * @param title {string} Title of the milestone to be updated.
+ * @param milestone {object} Must contain at least a title to update.
+ * @param mainCallback {function} Called with err, updated milestones.
+ */
+Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
+    var me = this;
+    this._eachRepo(function(org, repo, localCallback) {
+        var payload = {
+            user: org,
+            repo: repo
+        };
+        me.gh.issues.getAllMilestones(payload, function(err, milestones) {
+            var slug = org + '/' + repo;
+            if (err) {
+                err.repo = slug;
+                localCallback(err);
+            } else {
+                var match = _.find(milestones, function(milestone) {
+                        return milestone.title == title;
+                    }),
+                    result = undefined;
+                if (match) {
+                    result = {
+                        repo: slug,
+                        number: match.number
+                    }
+                }
+                localCallback(null, result);
+            }
+        });
+    }, function(err, milestonesToUpdate) {
+        if (err) {
+            mainCallback(err);
+        } else {
+            me._eachRepo(function(org, repo, milestoneUpdateCallback) {
+                var slug = org + '/' + repo,
+                    milestoneToUpdate = _.find(milestonesToUpdate, function(ms) {
+                        return ms && ms.repo == slug;
+                    }),
+                    payload = undefined;
+                if (milestoneToUpdate) {
+                    payload = _.extend({
+                        user: org,
+                        repo: repo,
+                        number: milestoneToUpdate.number,
+                    }, milestone);
+                    me.gh.issues.updateMilestone(payload, function(err, result) {
+                        if (err) {
+                            err.repo = org + '/' + repo;
+                            milestoneUpdateCallback(err);
+                        } else {
+                            milestoneUpdateCallback(err, result);
+                        }
+                    });
+                }
+            }, mainCallback);
+        }
+    });
+};
+
+/**
  * Creates the same labels across all monitored repos.
  * @param labels {Array} Should be a list of objects, each with a name and hex color (without the #).
  * @param mainCallback {function} Called with err, created labels.

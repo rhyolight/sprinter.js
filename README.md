@@ -19,8 +19,8 @@ Run the following actions across multiple repos:
 - list milestones
 - create milestones
 - close  milestones
+- update milestones
 - create labels
-
 
 [1] There is no [1].
 
@@ -75,6 +75,8 @@ Displays usage information.
 
     EXAMPLE
     sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
+
+> **WARNING:** The CLI is not complete. There are some functions within the library that are not exposed as CLI functions.
 
 ## CLI Usage
 
@@ -133,6 +135,18 @@ Milestones will be grouped by title.
     sprinter.createMilestones({
         title: 'Sprint 20',
         due_on: 'Apr 16, 2014'
+    }, function(err, milestones) {
+        console.log(milestones);
+    });
+
+### Updating A Milestone Across All Repos
+
+Provide a milestone title and new milestone properties, and you can update all milestones with that name across every repository.
+
+    sprinter.updateMilestones('Milestone name to update', {
+        title: 'New milestone name',
+        due_on: 'May 5, 2015',
+        description: 'New milestone description'
     }, function(err, milestones) {
         console.log(milestones);
     });
