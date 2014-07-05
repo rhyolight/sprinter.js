@@ -23,11 +23,11 @@ function sortIssues(issues) {
 }
 
 /**
- * Wrapper class around the Github API client, providing some authentication
+ * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
  * the issue trackers of several repositories at once.
- * @param username {string} Github username credential for authentication.
- * @param password {string} Github password credential for authentication.
+ * @param username {string} GitHub username credential for authentication.
+ * @param password {string} GitHub password credential for authentication.
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
  */
 function Sprinter(username, password, repoSlugs) {

@@ -38,7 +38,7 @@ function printHelp() {
     var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers "
         + "of several repositories at once.\n\n"
         + "REQUIREMENTS\n".underline
-        + "Environment variables with the Github username and password for API calls:\n"
+        + "Environment variables with the GitHub username and password for API calls:\n"
         + "\tGH_USERNAME=<username>\n".grey
         + "\tGH_PASSWORD=<password>\n".grey
         + "\nUSAGE\n".underline
@@ -103,11 +103,11 @@ function processArgs(args) {
     }
 }
 
-function exitIfMissingGithubCreds() {
+function exitIfMissingGitHubCreds() {
     githubUsername = process.env['GH_USERNAME'];
     githubPassword = process.env['GH_PASSWORD'];
     if (! githubUsername || ! githubPassword) {
-        console.error(('You must set your Github credentials into the '
+        console.error(('You must set your GitHub credentials into the '
                     + 'environment for this script to run.\n'
                     + '    export GH_USERNAME=<username>\n'
                     + '    export GH_USERNAME=<username>').red);
@@ -192,7 +192,7 @@ function closeMilestonesCli(sprinter, command, commandArgs, kwargs) {
 }
 
 processArgs(argv);
-exitIfMissingGithubCreds();
+exitIfMissingGitHubCreds();
 
 sprinter = new Sprinter(
     githubUsername,
