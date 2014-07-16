@@ -92,13 +92,10 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         milestone = filters.milestone;
         delete filters.milestone;
     }
-    console.log('getIssues');
     this._eachRepoFlattened(function(org, repo, localCallback) {
         var localFilters = _.clone(filters);
         localFilters.user = org;
         localFilters.repo = repo;
-        console.log(filters);
-        console.log(localFilters);
         me.gh.issues.repoIssues(localFilters, function(err, issues) {
             if (err) {
                 err.repo = org + '/' + repo;
