@@ -1,4 +1,4 @@
-# Sprinter [![Build Status](https://travis-ci.org/rhyolight/sprinter.js.svg?branch=master)](https://travis-ci.org/rhyolight/sprinter.js) [![Coverage Status](https://coveralls.io/repos/rhyolight/sprinter.js/badge.png?branch=master)](https://coveralls.io/r/rhyolight/sprinter.js?branch=master)
+# Sprinter [![Build Status](https://travis-ci.org/rhyolight/sprinter.js.svg?branch=master)](https://travis-ci.org/rhyolight/sprinter.js) [![Coverage Status](https://coveralls.io/repos/rhyolight/sprinter.js/badge.png?branch=master)](https://coveralls.io/r/rhyolight/sprinter.js?branch=master) [![NPM version](https://badge.fury.io/js/sprinter.svg)](http://badge.fury.io/js/sprinter)
 
 <table>
 <tr>
@@ -6,12 +6,12 @@
     <img src="http://maxcdn.fooyoh.com/files/attach/images/591/736/904/004/haters_gonna_hate.gif"/>
   </td>
   <td>
-    <p/>Provides some extended utilities for the Github API for operating against <strong>multiple Github issue trackers at once</strong>.
+    <p/>Provides some extended utilities for the GitHub API for operating against <strong>multiple GitHub issue trackers at once</strong>.
   </td>
 </tr>
 </table>
 
-If you're like me, this library might save you an hour a week. I'm a "scrum master", which sounds silly but is actually a real thing. <a href="https://github.com/numenta/">We have a lot of repos on Github</a>. Most of them have issue trackers. So it takes a long time to update all of them for common recurring tasks like sprint changes. This library takes your Github credentials [2] and gives you easy ways to set up tasks that execute against multiple Github Issue Trackers at once, so you can:
+If you're like me, this library might save you an hour a week. I'm a "scrum master", which sounds silly but is actually a real thing. <a href="https://github.com/numenta/">We have a lot of repos on GitHub</a>. Most of them have issue trackers. So it takes a long time to update all of them for common recurring tasks like sprint changes. This library takes your GitHub credentials [2] and gives you easy ways to set up tasks that execute against multiple GitHub Issue Trackers at once, so you can:
 
 Run the following actions across multiple repos:
 
@@ -28,7 +28,7 @@ Run the following actions across multiple repos:
 
 ## Example Usage
 
-Sprinter is used as the backend to report on issues across all the repositories in the [Numenta Github Organization](https://github.com/numenta/) on our [status board](http://status.numenta.org/issues.html).
+Sprinter is used as the backend to report on issues across all the repositories in the [Numenta GitHub Organization](https://github.com/numenta/) on our [status board](http://status.numenta.org/issues.html).
 
 ## Installation
 
@@ -51,7 +51,7 @@ Displays usage information.
     Sprinter CLI Tool: Utilities for operating on issue trackers of several repositories at once.
     
     REQUIREMENTS
-    Environment variables with the Github username and password for API calls:
+    Environment variables with the GitHub username and password for API calls:
     	GH_USERNAME=<username>
     	GH_PASSWORD=<password>
     
