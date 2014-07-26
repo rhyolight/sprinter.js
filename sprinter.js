@@ -22,6 +22,23 @@ function sortIssues(issues) {
     }).reverse();
 }
 
+function attachReadableErrorMessage(err) {
+    var errorMessage = JSON.parse(err.message);
+    // 404 means unknown repo
+    if (err.code == 404 && err.repo) {
+        err.message = 'Unknown repository: "' + err.repo + '"';
+    }
+    // 410 means repo has no GitHub Issues
+    else if (err.code == 410 && err.repo) {
+        err.message = '"' + err.repo + '" has no GitHub Issues associated with it.';
+    }
+    // 422 means validation error
+    else if (err.code == 422 && err.repo) {
+        err.message = 'Validation error on "' + err.repo + '": ' + JSON.stringify(errorMessage.errors);
+    }
+    return err;
+}
+
 /**
  * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
@@ -109,7 +126,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         });
     }, function(err, issues) {
         if (err) {
-            mainCallback(err);
+            mainCallback(attachReadableErrorMessage(err));
         } else {
             if (milestone) {
                 issues = _.filter(issues, function(issue) {
@@ -117,7 +134,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                     return issue.milestone.title == milestone;
                 });
             }
-            mainCallback(err, sortIssues(issues));
+            mainCallback(null, sortIssues(issues));
         }
     });
 };
@@ -146,7 +163,7 @@ Sprinter.prototype.getMilestones = function(mainCallback) {
         });
     }, function(err, milestones) {
         if (err) {
-            mainCallback(err);
+            mainCallback(attachReadableErrorMessage(err));
         } else {
             mainCallback(err, _.groupBy(milestones, 'title'));
         }
@@ -163,7 +180,7 @@ Sprinter.prototype.closeMilestones = function(title, mainCallback) {
     this.getMilestones(function(err, milestones) {
         var matches;
         if (err) {
-            mainCallback(err);
+            mainCallback(attachReadableErrorMessage(err));
         } else {
             matches = milestones[title];
             if (! matches) {
@@ -215,7 +232,13 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
                 localCallback(err, result);
             }
         });
-    }, mainCallback);
+    }, function(err, response) {
+        if (err) {
+            mainCallback(attachReadableErrorMessage(err));
+        } else {
+            mainCallback(err, response);
+        }
+    });
 };
 
 /**
@@ -252,7 +275,7 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
         });
     }, function(err, milestonesToUpdate) {
         if (err) {
-            mainCallback(err);
+            mainCallback(attachReadableErrorMessage(err));
         } else {
             me._eachRepo(function(org, repo, milestoneUpdateCallback) {
                 var slug = org + '/' + repo,
@@ -294,11 +317,24 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
                 repo: repo
             }, labelSpec);
             return function(callback) {
-                me.gh.issues.createLabel(payload, callback);
+                me.gh.issues.createLabel(payload, function(err, resp) {
+                    if (err) {
+                        err.repo = org + '/' + repo;
+                        callback(err);
+                    } else {
+                        callback(err, resp);
+                    }
+                });
             };
         });
         async.parallel(createFunctions, localCallback);
-    }, mainCallback);
+    }, function(err, response) {
+        if (err) {
+            mainCallback(attachReadableErrorMessage(err));
+        } else {
+            mainCallback(err, response);
+        }
+    });
 };
 
 module.exports = Sprinter;

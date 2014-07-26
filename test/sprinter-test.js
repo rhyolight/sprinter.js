@@ -65,6 +65,20 @@ describe('sprinter', function() {
             authenticate: function() {},
             issues: {
                 repoIssues: function(params, callback) {
+                    // Error case when repo does not exist
+                    if (params.repo == 'does not exist') {
+                        return callback({
+                            message: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3"}',
+                            code: 404
+                        });
+                    }
+                    // Error case when repo has no issue tracker
+                    else if (params.repo == 'no tracker') {
+                        return callback({
+                            message: '{"message":"Issues are disabled for this repo","documentation_url":"https://developer.github.com/v3/issues/"}',
+                            code: 410
+                        });
+                    }
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
                     expect(params).to.have.keys(['user', 'repo', 'state'], 'GitHub params are missing data.');
                     assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
@@ -93,6 +107,28 @@ describe('sprinter', function() {
             sprinter.getIssues(function(err, issues) {
                 expect(err).to.not.exist;
                 expect(issues).to.have.length(33, 'Wrong length of returned issues.');
+                done();
+            });
+        });
+
+        it('handles errors when repo does not exist', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/does not exist']);
+
+            sprinter.getIssues(function(err) {
+                expect(err).to.exist;
+                expect(err).to.have.keys(['message', 'code', 'repo']);
+                expect(err.message).to.equal('Unknown repository: "numenta/does not exist"')
+                done();
+            });
+        });
+
+        it('handles errors when repo has no issue tracker', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/no tracker']);
+
+            sprinter.getIssues(function(err) {
+                expect(err).to.exist;
+                expect(err).to.have.keys(['message', 'code', 'repo']);
+                expect(err.message).to.equal('"numenta/no tracker" has no GitHub Issues associated with it.')
                 done();
             });
         });
@@ -134,6 +170,7 @@ describe('sprinter', function() {
                 due_on: 'Apr 16, 2015'
             }, function(err, milestones) {
                 expect(err).to.not.exist;
+                console.log(err);
                 expect(milestones).to.have.length(2, 'Wrong length of returned milestones.');
                 done();
             });
