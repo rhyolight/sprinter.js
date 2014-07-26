@@ -30,7 +30,7 @@ function attachReadableErrorMessage(err) {
     }
     // 410 means repo has no GitHub Issues
     else if (err.code == 410 && err.repo) {
-        err.message = err.repo + ' has no GitHub Issues associated with it.';
+        err.message = '"' + err.repo + '" has no GitHub Issues associated with it.';
     }
     // 422 means validation error
     else if (err.code == 422 && err.repo) {
