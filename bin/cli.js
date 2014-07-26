@@ -59,6 +59,9 @@ function printHelp() {
 function handleError(message, exitCode) {
     console.error(message.red);
     printHelp();
+    if (exitCode == undefined) {
+        exitCode = -1;
+    }
     process.exit(exitCode);
 }
 
@@ -134,11 +137,8 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
     }
     commandArgs.push(filters);
     commandArgs.push(function(err, issues) {
-        // TODO: handle errors.
         if (err) {
-            if (err.code == 404 && err.repo) {
-                handleError('Unknown repository: "' + err.repo + '"', -1);
-            }
+            handleError(err.message);
         }
         formatter.formatIssues(issues);
     });
@@ -147,7 +147,9 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
 
 function getMilestonesCli(sprinter, command, commandArgs, kwargs) {
     commandArgs.push(function(err, milestones) {
-        // TODO: handle errors.
+        if (err) {
+            handleError(err.message);
+        }
         formatter.formatMilestones(milestones);
     });
     sprinter.getMilestones.apply(sprinter, commandArgs)
