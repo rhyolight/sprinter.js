@@ -38,9 +38,10 @@ function printHelp() {
     var help = "\nSprinter CLI Tool".bold.magenta + ": Utilities for operating on issue trackers "
         + "of several repositories at once.\n\n"
         + "REQUIREMENTS\n".underline
-        + "Environment variables with the GitHub username and password for API calls:\n"
+        + "Environment variables with the GitHub username and personal access token (NOT your master password) for API calls:\n"
         + "\tGH_USERNAME=<username>\n".grey
-        + "\tGH_PASSWORD=<password>\n".grey
+        + "\tGH_PASSWORD=<personal access token>\n".grey
+        + "Create a personal access token for sprinter.js at https://github.com/settings/applications -> 'Generate token' with 'repo', 'public_repo', and 'repo:status' checked.\n"
         + "\nUSAGE\n".underline
         + "    sprinter <command> <cmd-options> --repos=org/repo,org2/repo2\n".yellow
         + " or\n"

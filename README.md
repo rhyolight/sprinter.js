@@ -51,9 +51,10 @@ Displays usage information.
     Sprinter CLI Tool: Utilities for operating on issue trackers of several repositories at once.
     
     REQUIREMENTS
-    Environment variables with the GitHub username and password for API calls:
+    Environment variables with the GitHub username and personal access token (NOT your master password) for API calls:
     	GH_USERNAME=<username>
-    	GH_PASSWORD=<password>
+    	GH_PASSWORD=<personal access token>
+    Create a personal access token for sprinter.js at https://github.com/settings/applications -> 'Generate token' with 'repo', 'public_repo', and 'repo:status' checked.
     
     USAGE
         sprinter <command> <cmd-options> --repos=org/repo,org2/repo2
