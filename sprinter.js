@@ -1,6 +1,9 @@
-var GitHubApi = require('github'),
-    _ = require('underscore'),
-    async = require('async');
+var GitHubApi = require('github')
+  , _ = require('underscore')
+  , async = require('async')
+  , pageRegex = new RegExp("&page=(\\d*)")
+  , relRegex = new RegExp("rel=\"(.*)\"")
+  ;
 
 /**
  * Converts an array of slug identifiers like "org/repo" into an array of arrays
@@ -37,6 +40,20 @@ function attachReadableErrorMessage(err) {
         err.message = 'Validation error on "' + err.repo + '": ' + JSON.stringify(errorMessage.errors);
     }
     return err;
+}
+
+/**
+ * Simple utility for creating a range array.
+ * @param start
+ * @param end
+ * @returns {Array}
+ */
+function range(start, end) {
+    var out = [];
+    for (var i = start; i <= end; i++) {
+        out.push(i);
+    }
+    return out;
 }
 
 /**
@@ -97,31 +114,65 @@ Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
  *                                sorted by updated_at.
  */
 Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
-    var me = this,
-        filters,
-        milestone;
+    var me = this
+      , defaultFilters = {state: 'open'}
+      , filters
+      , milestone;
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
     }
-    filters = _.extend({state: 'open'}, userFilters);
+    filters = _.extend(defaultFilters, userFilters);
     if (filters.milestone) {
         milestone = filters.milestone;
         delete filters.milestone;
     }
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        var localFilters = _.clone(filters);
+        var localFilters = _.clone(filters)
+          // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
+          // object going into the repoIssues call, destroying the date string.
+          , since = localFilters.since;
         localFilters.user = org;
         localFilters.repo = repo;
         me.gh.issues.repoIssues(localFilters, function(err, issues) {
+            var links = {}
+              , localFiltersWithPage = undefined;
             if (err) {
                 err.repo = org + '/' + repo;
                 localCallback(err);
             } else {
-                localCallback(err, _.map(issues, function(issue) {
-                    issue.repo = org + '/' + repo;
-                    return issue;
-                }));
+                // Handles pagination. Page details are in meta.link. If there are more
+                // pages to fetch, it is done within this condition and issues from next
+                // pages are added to the output issues array.
+                if (issues.meta && issues.meta.link) {
+                    _.each(issues.meta.link.split(','), function(link) {
+                        var parts = link.split(';')
+                          , pageNumber = parseInt(parts[0].match(pageRegex)[1])
+                          , rel = parts[1].match(relRegex)[1];
+                        links[rel] = pageNumber;
+                    });
+                    _.each(range(links.next, links.last), function(page) {
+                        localFiltersWithPage = _.clone(localFilters);
+                        if (since) {
+                            localFiltersWithPage.since = since;
+                        }
+                        localFiltersWithPage.page = page;
+                        me.gh.issues.repoIssues(localFiltersWithPage, function(err, pageIssues) {
+                            issues = issues.concat(pageIssues);
+                            if (page == links['last']) {
+                                localCallback(err, _.map(issues, function(issue) {
+                                    issue.repo = org + '/' + repo;
+                                    return issue;
+                                }));
+                            }
+                        });
+                    });
+                } else {
+                    localCallback(err, _.map(issues, function(issue) {
+                        issue.repo = org + '/' + repo;
+                        return issue;
+                    }));
+                }
             }
         });
     }, function(err, issues) {
