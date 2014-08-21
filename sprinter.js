@@ -165,14 +165,19 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                         localFiltersWithPage.page = page;
                         me.gh.issues.repoIssues(localFiltersWithPage, function(err, pageIssues) {
                             returnCount++;
-                            issues = issues.concat(pageIssues);
-                            // We're done when all the pages have returned (minus 1 because the first page
-                            // was already loaded.
-                            if (returnCount == links['last'] - 1) {
-                                localCallback(err, _.map(issues, function(issue) {
-                                    issue.repo = org + '/' + repo;
-                                    return issue;
-                                }));
+                            if (err) {
+                                err.repo = org + '/' + repo;
+                                localCallback(err);
+                            } else {
+                                issues = issues.concat(pageIssues);
+                                // We're done when all the pages have returned (minus 1 because the first page
+                                // was already loaded.
+                                if (returnCount == links['last'] - 1) {
+                                    localCallback(err, _.map(issues, function(issue) {
+                                        issue.repo = org + '/' + repo;
+                                        return issue;
+                                    }));
+                                }
                             }
                         });
                     });
