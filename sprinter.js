@@ -26,7 +26,12 @@ function sortIssues(issues) {
 }
 
 function attachReadableErrorMessage(err) {
-    var errorMessage = JSON.parse(err.message);
+    var errorMessage;
+    try {
+        errorMessage = JSON.parse(err.message);
+    } catch (jsonParseError) {
+        return err;
+    }
     // 404 means unknown repo
     if (err.code == 404 && err.repo) {
         err.message = 'Unknown repository: "' + err.repo + '"';
@@ -145,6 +150,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                 // pages to fetch, it is done within this condition and issues from next
                 // pages are added to the output issues array.
                 if (issues.meta && issues.meta.link) {
+                    var returnCount = 0;
                     _.each(issues.meta.link.split(','), function(link) {
                         var parts = link.split(';')
                           , pageNumber = parseInt(parts[0].match(pageRegex)[1])
@@ -158,8 +164,11 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                         }
                         localFiltersWithPage.page = page;
                         me.gh.issues.repoIssues(localFiltersWithPage, function(err, pageIssues) {
+                            returnCount++;
                             issues = issues.concat(pageIssues);
-                            if (page == links['last']) {
+                            // We're done when all the pages have returned (minus 1 because the first page
+                            // was already loaded.
+                            if (returnCount == links['last'] - 1) {
                                 localCallback(err, _.map(issues, function(issue) {
                                     issue.repo = org + '/' + repo;
                                     return issue;

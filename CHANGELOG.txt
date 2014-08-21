@@ -1,0 +1,6 @@
+# Changelog
+
+## 0.1.9
+
+* Fixed a bug in pagination results not returning all pages
+
