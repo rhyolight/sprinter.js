@@ -11,7 +11,7 @@
 </tr>
 </table>
 
-If you're like me, this library might save you an hour a week. I'm a "scrum master", which sounds silly but is actually a real thing. <a href="https://github.com/numenta/">We have a lot of repos on GitHub</a>. Most of them have issue trackers. So it takes a long time to update all of them for common recurring tasks like sprint changes. This library takes your GitHub credentials [2] and gives you easy ways to set up tasks that execute against multiple GitHub Issue Trackers at once, so you can:
+If you're like me, this library might save you an hour a week. I'm a "scrum master", which sounds silly but is actually a real thing. <a href="https://github.com/numenta/">We have a lot of repos on GitHub</a>. Most of them have issue trackers. So it takes a long time to update all of them for common recurring tasks like sprint changes. This library takes your GitHub credentials and gives you easy ways to set up tasks that execute against multiple GitHub Issue Trackers at once, so you can:
 
 Run the following actions across multiple repos:
 
@@ -21,10 +21,7 @@ Run the following actions across multiple repos:
 - close  milestones
 - update milestones
 - create labels
-
-[1] There is no [1].
-
-[2] Should I be using a different authentication method? If so, [please file a bug](https://github.com/rhyolight/sprinter.js/issues).
+- list labels
 
 ## Example Usage
 
@@ -177,7 +174,6 @@ Closes all milestones with the title `Sprint 18` across all monitored repos.
         console.log(closed);
     });
 
-
 ### Creating Labels Across All Repos
 
     var labels = [
@@ -196,5 +192,11 @@ Closes all milestones with the title `Sprint 18` across all monitored repos.
     ]
     
     sprinter.createLabels(labels, function (err, labels) {
+        console.log(labels);
+    });
+
+### List Labels Across All Repos
+
+    sprinter.getLabels(function (err, labels) {
         console.log(labels);
     });

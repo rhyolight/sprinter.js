@@ -402,4 +402,35 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
     });
 };
 
+/**
+ * Returns all labels across monitored repos. Also attaches a "repo" attribute
+ * so users can tell what repo labels are coming from.
+ * @param mainCallback {function} Called with err, labels.
+ */
+Sprinter.prototype.getLabels = function(mainCallback) {
+    var me = this;
+    this._eachRepoFlattened(function(org, repo, localCallback) {
+        me.gh.issues.getLabels({
+            user: org,
+            repo: repo
+        }, function(err, labels) {
+            if (err) {
+                err.repo = org + '/' + repo;
+                localCallback(err);
+            } else {
+                localCallback(err, _.map(labels, function(label) {
+                    label.repo = org + '/' + repo;
+                    return label;
+                }));
+            }
+        });
+    }, function(err, labels) {
+        if (err) {
+            mainCallback(attachReadableErrorMessage(err));
+        } else {
+            mainCallback(err, labels);
+        }
+    });
+};
+
 module.exports = Sprinter;

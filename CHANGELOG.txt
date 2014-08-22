@@ -1,10 +1,14 @@
 # Changelog
 
+## 0.1.11
+
+* Added getLabels function.
+
 ## 0.1.10
 
 * Added error handling for pagination errors.
 
 ## 0.1.9
 
-* Fixed a bug in pagination results not returning all pages
+* Fixed a bug in pagination results not returning all pages.
 
