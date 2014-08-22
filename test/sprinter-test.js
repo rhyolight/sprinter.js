@@ -6,6 +6,8 @@ var assert = require('chai').assert,
     mockRhyolightMilestonesCreated = require('./mock-data/rhyolight-milestone-created'),
     mockNupicLabels = require('./mock-data/nupic-labels'),
     mockSprinterLabels = require('./mock-data/sprinter-labels'),
+    mockNupicCollaborators = require('./mock-data/nupic-collaborators'),
+    mockSprinterCollaborators = require('./mock-data/sprinter-collaborators'),
     proxyquire = require('proxyquire');
 
 describe('sprinter', function() {
@@ -211,7 +213,48 @@ describe('sprinter', function() {
 
             sprinter.getLabels(function(err, issues) {
                 expect(err).to.not.exist;
-                expect(issues).to.have.length(mockNupicLabels.length + mockSprinterLabels.length, 'Wrong length of returned issues.');
+                expect(issues).to.have.length(mockNupicLabels.length + mockSprinterLabels.length, 'Wrong length of returned labels.');
+                done();
+            });
+        });
+
+    });
+
+    describe('when fetching collaborators', function() {
+        var mockGitHubInstance = {
+            authenticate: function() {},
+            repos: {
+                getCollaborators: function(params, callback) {
+                    expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
+                    expect(params).to.have.keys(['user', 'repo', 'per_page'], 'GitHub params are missing data.');
+                    expect(params.per_page).to.equal(1000);
+                    assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                    assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
+                    if (params.user == 'numenta' && params.repo == 'nupic') {
+                        callback(null, mockNupicCollaborators);
+                    } else if (params.user == 'rhyolight' && params.repo == 'sprinter.js') {
+                        callback(null, mockSprinterCollaborators);
+                    } else {
+                        assert.fail('Unknown repo "' + params.user + '/' + params.repo + '".');
+                    }
+                }
+            }
+        };
+
+        var Sprinter = proxyquire('../sprinter', {
+            'github': function () {
+                return mockGitHubInstance;
+            }
+        });
+
+        it('fetches labels from all repos', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+            sprinter.getCollaborators(function(err, issues) {
+                // Minus one because "rhyolight" is in both lists and we don't want duplicates.
+                var expectedLength = mockNupicCollaborators.length + mockSprinterCollaborators.length - 1;
+                expect(err).to.not.exist;
+                expect(issues).to.have.length(expectedLength, 'Wrong length of returned collaborators.');
                 done();
             });
         });

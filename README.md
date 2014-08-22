@@ -22,6 +22,7 @@ Run the following actions across multiple repos:
 - update milestones
 - create labels
 - list labels
+- list collaborators
 
 ## Example Usage
 
@@ -199,4 +200,11 @@ Closes all milestones with the title `Sprint 18` across all monitored repos.
 
     sprinter.getLabels(function (err, labels) {
         console.log(labels);
+    });
+    
+### List Collaborators Across All Repos
+
+    sprinter.getCollaborators(function (err, collaborators) {
+        console.log(err);
+        console.log(collaborators.length);
     });

@@ -62,6 +62,25 @@ function range(start, end) {
 }
 
 /**
+ * Removes duplicate collaborators.
+ * @param collaborators
+ * @returns {Array}
+ */
+function deduplicateCollaborators(collaborators) {
+    var foundLogins = [];
+    return _.filter(collaborators, function (collaborator) {
+        var duplicate = false
+          , login = collaborator.login;
+        if (foundLogins.indexOf(login) > -1) {
+            duplicate = true;
+        } else {
+            foundLogins.push(login);
+        }
+        return ! duplicate;
+    });
+}
+
+/**
  * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
  * the issue trackers of several repositories at once.
@@ -432,5 +451,34 @@ Sprinter.prototype.getLabels = function(mainCallback) {
         }
     });
 };
+
+/**
+ * Returns all collaborators across monitored repos.
+ * @param mainCallback {function} Called with err, collaborators.
+ */
+Sprinter.prototype.getCollaborators = function(mainCallback) {
+    var me = this;
+    this._eachRepoFlattened(function(org, repo, localCallback) {
+        me.gh.repos.getCollaborators({
+            user: org,
+            repo: repo,
+            per_page: 1000
+        }, function(err, collaborators) {
+            if (err) {
+                err.repo = org + '/' + repo;
+                localCallback(err);
+            } else {
+                localCallback(err, collaborators);
+            }
+        });
+    }, function(err, collaborators) {
+        if (err) {
+            mainCallback(attachReadableErrorMessage(err));
+        } else {
+            mainCallback(err, deduplicateCollaborators(collaborators));
+        }
+    });
+};
+
 
 module.exports = Sprinter;
