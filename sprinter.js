@@ -141,8 +141,11 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
     var me = this
       , defaultFilters = {state: 'open'}
       , filters
+      , filterOrg
+      , filterRepo
       , milestone
-      , issueFetcher;
+      , issueFetcher
+      , issueResultHandler;
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
@@ -153,7 +156,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         delete filters.milestone;
     }
 
-    function issueFetcher(org, repo, localCallback) {
+    issueFetcher = function(org, repo, localCallback) {
         var localFilters = _.clone(filters)
         // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
         // object going into the repoIssues call, destroying the date string.
@@ -210,9 +213,9 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                 }
             }
         });
-    }
+    };
 
-    this._eachRepoFlattened(issueFetcher, function(err, issues) {
+    issueResultHandler = function(err, issues) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
         } else {
@@ -224,7 +227,16 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
             }
             mainCallback(null, sortIssues(issues));
         }
-    });
+    };
+
+    // If the user specified only one repository to query, we don't want to query all the others.
+    if (filters.repo) {
+        filterOrg = filters.repo.split('/').shift();
+        filterRepo = filters.repo.split('/').pop()
+        issueFetcher(filterOrg, filterRepo, issueResultHandler);
+    } else {
+        this._eachRepoFlattened(issueFetcher, issueResultHandler);
+    }
 };
 
 /**

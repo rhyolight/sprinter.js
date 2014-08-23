@@ -139,11 +139,22 @@ Displays usage information.
     
 #### Using API Filters
 
-You can use any API query params that the GitHub API supports when making querys by add a query object, like this:
+You can use any API query params that the GitHub API supports when making queries by add a query object, like this:
 
     sprinter.getIssues({assignee: 'rhyolight'}, function(err, issues) {
         console.log(issues);
     });
+    
+In addition to the regular GitHub API queries, you can also add `{repo: '<org>/<repo>'}`, which will prevent Sprinter from querying all the monitored repositories and focus on just one repo.
+
+    sprinter.getIssues({
+        assignee: 'rhyolight'
+      , repo: 'numenta/nupic'
+    }, function(err, issues) {
+        console.log(issues);
+    });
+    
+This will only query the `numenta/nupic` repository and return issues assigned to @rhyolight.
 
 ### Listing All Milestones Across All Repos
 
