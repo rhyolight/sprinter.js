@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.13
+
+* Added ability to filter by repository. https://github.com/rhyolight/sprinter.js/issues/18
+
 ## 0.1.12
 
 * Added getCollaborators function.

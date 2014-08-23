@@ -141,7 +141,11 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
     var me = this
       , defaultFilters = {state: 'open'}
       , filters
-      , milestone;
+      , filterOrg
+      , filterRepo
+      , milestone
+      , issueFetcher
+      , issueResultHandler;
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
@@ -151,16 +155,17 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         milestone = filters.milestone;
         delete filters.milestone;
     }
-    this._eachRepoFlattened(function(org, repo, localCallback) {
+
+    issueFetcher = function(org, repo, localCallback) {
         var localFilters = _.clone(filters)
-          // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
-          // object going into the repoIssues call, destroying the date string.
-          , since = localFilters.since;
+        // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
+        // object going into the repoIssues call, destroying the date string.
+            , since = localFilters.since;
         localFilters.user = org;
         localFilters.repo = repo;
         me.gh.issues.repoIssues(localFilters, function(err, issues) {
             var links = {}
-              , localFiltersWithPage = undefined;
+                , localFiltersWithPage = undefined;
             if (err) {
                 err.repo = org + '/' + repo;
                 localCallback(err);
@@ -172,8 +177,8 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                     var returnCount = 0;
                     _.each(issues.meta.link.split(','), function(link) {
                         var parts = link.split(';')
-                          , pageNumber = parseInt(parts[0].match(pageRegex)[1])
-                          , rel = parts[1].match(relRegex)[1];
+                            , pageNumber = parseInt(parts[0].match(pageRegex)[1])
+                            , rel = parts[1].match(relRegex)[1];
                         links[rel] = pageNumber;
                     });
                     _.each(range(links.next, links.last), function(page) {
@@ -208,7 +213,9 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                 }
             }
         });
-    }, function(err, issues) {
+    };
+
+    issueResultHandler = function(err, issues) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
         } else {
@@ -220,7 +227,16 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
             }
             mainCallback(null, sortIssues(issues));
         }
-    });
+    };
+
+    // If the user specified only one repository to query, we don't want to query all the others.
+    if (filters.repo) {
+        filterOrg = filters.repo.split('/').shift();
+        filterRepo = filters.repo.split('/').pop()
+        issueFetcher(filterOrg, filterRepo, issueResultHandler);
+    } else {
+        this._eachRepoFlattened(issueFetcher, issueResultHandler);
+    }
 };
 
 /**

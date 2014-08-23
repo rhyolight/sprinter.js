@@ -137,6 +137,18 @@ describe('sprinter', function() {
             });
         });
 
+        describe('when a repo parameter is specified', function() {
+            it('only queries one issue tracker', function(done) {
+                var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+                sprinter.getIssues({repo: 'rhyolight/sprinter.js'}, function(err, issues) {
+                    expect(err).to.not.exist;
+                    expect(issues).to.have.length(3, 'Wrong length of returned issues.');
+                    done();
+                });
+            });
+        });
+
     });
 
     describe('when creating milestones', function() {
