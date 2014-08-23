@@ -136,6 +136,14 @@ Displays usage information.
     sprinter.getIssues(function(err, issues) {
         console.log(issues);
     });
+    
+#### Using API Filters
+
+You can use any API query params that the GitHub API supports when making querys by add a query object, like this:
+
+    sprinter.getIssues({assignee: 'rhyolight'}, function(err, issues) {
+        console.log(issues);
+    });
 
 ### Listing All Milestones Across All Repos
 
