@@ -67,6 +67,7 @@ describe('sprinter', function() {
     describe('when fetching issues', function() {
         var mockGitHubInstance = {
             authenticate: function() {},
+            hasNextPage: function() { return false; },
             issues: {
                 repoIssues: function(params, callback) {
                     // Error case when repo does not exist
