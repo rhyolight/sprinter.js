@@ -80,29 +80,6 @@ function deduplicateCollaborators(collaborators) {
     });
 }
 
-function fetchAllPages(client, fetchFunction, params, callback) {
-    var allPages = []
-      , slug = params.user + '/' + params.repo;
-    function getRemainingPages(lastPage, pageCallback) {
-        allPages = allPages.concat(lastPage);
-        if (client.hasNextPage(lastPage)) {
-            client.getNextPage(lastPage, function(err, pageResults) {
-                getRemainingPages(pageResults, pageCallback);
-            });
-        } else {
-            pageCallback(null, allPages);
-        }
-    }
-    fetchFunction(params, function(err, pageOneResults) {
-        if (err) {
-            err.repo = slug;
-            callback(err);
-        } else {
-            getRemainingPages(pageOneResults, callback);
-        }
-    });
-}
-
 /**
  * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
@@ -153,6 +130,30 @@ Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
     });
 };
 
+Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
+    var client = this.gh
+      , allPages = []
+      , slug = params.user + '/' + params.repo;
+    function getRemainingPages(lastPage, pageCallback) {
+        allPages = allPages.concat(lastPage);
+        if (client.hasNextPage(lastPage)) {
+            client.getNextPage(lastPage, function(err, pageResults) {
+                getRemainingPages(pageResults, pageCallback);
+            });
+        } else {
+            pageCallback(null, allPages);
+        }
+    }
+    fetchFunction(params, function(err, pageOneResults) {
+        if (err) {
+            err.repo = slug;
+            callback(err);
+        } else {
+            getRemainingPages(pageOneResults, callback);
+        }
+    });
+};
+
 /**
  * Returns all issues across all monitored repos. Optional filters can be provided
  * to filter results.
@@ -183,7 +184,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         var localFilters = _.clone(filters);
         localFilters.user = org;
         localFilters.repo = repo;
-        fetchAllPages(me.gh, me.gh.issues.repoIssues, localFilters, localCallback);
+        me._fetchAllPages(me.gh.issues.repoIssues, localFilters, localCallback);
     };
 
     issueResultHandler = function(err, issues) {
@@ -218,22 +219,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 Sprinter.prototype.getMilestones = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        var slug = org + '/' + repo;
-        me.gh.issues.getAllMilestones({
-            user: org,
-            repo: repo
-        }, function(err, milestones) {
-            if (err) {
-                err.repo = org + '/' + repo;
-                localCallback(err);
-            } else {
-                applyPaginator(milestones, {}, me.gh.issues.getAllMilestones, slug, null, localCallback);
-//                localCallback(err, _.map(milestones, function(milestone) {
-//                    milestone.repo = org + '/' + repo;
-//                    return milestone;
-//                }));
-            }
-        });
+        me._fetchAllPages(me.gh.issues.getAllMilestones, {user: org, repo: repo}, localCallback);
     }, function(err, milestones) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -327,10 +313,9 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
             user: org,
             repo: repo
         };
-        me.gh.issues.getAllMilestones(payload, function(err, milestones) {
+        me._fetchAllPages(me.gh.issues.getAllMilestones, payload, function(err, milestones) {
             var slug = org + '/' + repo;
             if (err) {
-                err.repo = slug;
                 localCallback(err);
             } else {
                 var match = _.find(milestones, function(milestone) {
@@ -418,20 +403,7 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
 Sprinter.prototype.getLabels = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        me.gh.issues.getLabels({
-            user: org,
-            repo: repo
-        }, function(err, labels) {
-            if (err) {
-                err.repo = org + '/' + repo;
-                localCallback(err);
-            } else {
-                localCallback(err, _.map(labels, function(label) {
-                    label.repo = org + '/' + repo;
-                    return label;
-                }));
-            }
-        });
+        me._fetchAllPages(me.gh.issues.getLabels, {user: org, repo: repo}, localCallback);
     }, function(err, labels) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -448,18 +420,7 @@ Sprinter.prototype.getLabels = function(mainCallback) {
 Sprinter.prototype.getCollaborators = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        me.gh.repos.getCollaborators({
-            user: org,
-            repo: repo,
-            per_page: 1000
-        }, function(err, collaborators) {
-            if (err) {
-                err.repo = org + '/' + repo;
-                localCallback(err);
-            } else {
-                localCallback(err, collaborators);
-            }
-        });
+        me._fetchAllPages(me.gh.repos.getCollaborators, {user: org, repo: repo}, localCallback);
     }, function(err, collaborators) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
