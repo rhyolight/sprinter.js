@@ -67,6 +67,7 @@ describe('sprinter', function() {
     describe('when fetching issues', function() {
         var mockGitHubInstance = {
             authenticate: function() {},
+            hasNextPage: function() { return false; },
             issues: {
                 repoIssues: function(params, callback) {
                     // Error case when repo does not exist
@@ -197,6 +198,7 @@ describe('sprinter', function() {
     describe('when fetching labels', function() {
         var mockGitHubInstance = {
             authenticate: function() {},
+            hasNextPage: function() { return false; },
             issues: {
                 getLabels: function(params, callback) {
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
@@ -235,11 +237,11 @@ describe('sprinter', function() {
     describe('when fetching collaborators', function() {
         var mockGitHubInstance = {
             authenticate: function() {},
+            hasNextPage: function() { return false; },
             repos: {
                 getCollaborators: function(params, callback) {
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                    expect(params).to.have.keys(['user', 'repo', 'per_page'], 'GitHub params are missing data.');
-                    expect(params.per_page).to.equal(1000);
+                    expect(params).to.have.keys(['user', 'repo'], 'GitHub params are missing data.');
                     assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                     assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
                     if (params.user == 'numenta' && params.repo == 'nupic') {
@@ -259,7 +261,7 @@ describe('sprinter', function() {
             }
         });
 
-        it('fetches labels from all repos', function(done) {
+        it('fetches collaborators from all repos', function(done) {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
             sprinter.getCollaborators(function(err, issues) {
