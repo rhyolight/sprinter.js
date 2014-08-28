@@ -80,6 +80,48 @@ function deduplicateCollaborators(collaborators) {
     });
 }
 
+// Handles pagination. Page details are in meta.link. If there are more
+// pages to fetch, it is done within this condition and issues from next
+// pages are added to the output issues array.
+function paginator(results, originalParams, originalFunction, repoSlug, since, callback) {
+    var returnCount = 0
+        , links = {}
+        , paramsWithPage = undefined
+        ;
+    _.each(results.meta.link.split(','), function(link) {
+        var parts = link.split(';')
+            , pageNumber = parseInt(parts[0].match(pageRegex)[1])
+            , rel = parts[1].match(relRegex)[1];
+        links[rel] = pageNumber;
+    });
+    _.each(range(links.next, links.last), function(page) {
+        paramsWithPage = _.clone(originalParams);
+        if (since) {
+            paramsWithPage.since = since;
+        }
+        paramsWithPage.page = page;
+        originalFunction(paramsWithPage, function(err, pageResults) {
+            returnCount++;
+            if (err) {
+                err.repo = repoSlug;
+                callback(err);
+            } else {
+                results = results.concat(pageResults);
+                // We're done when all the pages have returned (minus 1 because the first page
+                // was already loaded.
+                if (returnCount == links['last'] - 1) {
+                    // Attaches repo to results so users know which repo the results cam from.
+                    callback(err, _.map(results, function(result) {
+                        result.repo = repoSlug;
+                        return result;
+                    }));
+                }
+            }
+        });
+    });
+
+}
+
 /**
  * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
@@ -158,53 +200,20 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 
     issueFetcher = function(org, repo, localCallback) {
         var localFilters = _.clone(filters)
-        // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
-        // object going into the repoIssues call, destroying the date string.
-            , since = localFilters.since;
+            // We have to stash this because it seems that the Node.js GitHub Client mutates the filter
+            // object going into the repoIssues call, destroying the date string.
+          , since = localFilters.since
+          , slug = org + '/' + repo;
         localFilters.user = org;
         localFilters.repo = repo;
         me.gh.issues.repoIssues(localFilters, function(err, issues) {
-            var links = {}
-                , localFiltersWithPage = undefined;
             if (err) {
-                err.repo = org + '/' + repo;
+                err.repo = slug;
                 localCallback(err);
             } else {
-                // Handles pagination. Page details are in meta.link. If there are more
-                // pages to fetch, it is done within this condition and issues from next
-                // pages are added to the output issues array.
                 if (issues.meta && issues.meta.link) {
-                    var returnCount = 0;
-                    _.each(issues.meta.link.split(','), function(link) {
-                        var parts = link.split(';')
-                            , pageNumber = parseInt(parts[0].match(pageRegex)[1])
-                            , rel = parts[1].match(relRegex)[1];
-                        links[rel] = pageNumber;
-                    });
-                    _.each(range(links.next, links.last), function(page) {
-                        localFiltersWithPage = _.clone(localFilters);
-                        if (since) {
-                            localFiltersWithPage.since = since;
-                        }
-                        localFiltersWithPage.page = page;
-                        me.gh.issues.repoIssues(localFiltersWithPage, function(err, pageIssues) {
-                            returnCount++;
-                            if (err) {
-                                err.repo = org + '/' + repo;
-                                localCallback(err);
-                            } else {
-                                issues = issues.concat(pageIssues);
-                                // We're done when all the pages have returned (minus 1 because the first page
-                                // was already loaded.
-                                if (returnCount == links['last'] - 1) {
-                                    localCallback(err, _.map(issues, function(issue) {
-                                        issue.repo = org + '/' + repo;
-                                        return issue;
-                                    }));
-                                }
-                            }
-                        });
-                    });
+                    paginator(issues, localFilters, me.gh.issues.repoIssues,
+                        slug, since, localCallback);
                 } else {
                     localCallback(err, _.map(issues, function(issue) {
                         issue.repo = org + '/' + repo;
