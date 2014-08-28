@@ -83,11 +83,8 @@ function deduplicateCollaborators(collaborators) {
 // Handles pagination. Page details are in meta.link. If there are more
 // pages to fetch, it is done within this condition and issues from next
 // pages are added to the output issues array.
-function paginator(results, originalParams, originalFunction, repoSlug, since, callback) {
-    var returnCount = 0
-        , links = {}
-        , paramsWithPage = undefined
-        ;
+function paginate(results, originalParams, originalFunction, repoSlug, since, callback) {
+    var paramsWithPage;
     _.each(results.meta.link.split(','), function(link) {
         var parts = link.split(';')
             , pageNumber = parseInt(parts[0].match(pageRegex)[1])
@@ -119,7 +116,18 @@ function paginator(results, originalParams, originalFunction, repoSlug, since, c
             }
         });
     });
+}
 
+function applyPaginator(results, originalParams, originalFunction, repoSlug, since, callback) {
+    if (results.meta && results.meta.link) {
+        paginate(results, originalParams, originalFunction,
+            repoSlug, since, callback);
+    } else {
+        callback(null, _.map(results, function(result) {
+            result.repo = repoSlug;
+            return result;
+        }));
+    }
 }
 
 /**
@@ -211,15 +219,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
                 err.repo = slug;
                 localCallback(err);
             } else {
-                if (issues.meta && issues.meta.link) {
-                    paginator(issues, localFilters, me.gh.issues.repoIssues,
-                        slug, since, localCallback);
-                } else {
-                    localCallback(err, _.map(issues, function(issue) {
-                        issue.repo = org + '/' + repo;
-                        return issue;
-                    }));
-                }
+                applyPaginator(issues, localFilters, me.gh.issues.repoIssues, slug, since, localCallback);
             }
         });
     };
@@ -256,6 +256,7 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 Sprinter.prototype.getMilestones = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
+        var slug = org + '/' + repo;
         me.gh.issues.getAllMilestones({
             user: org,
             repo: repo
@@ -264,10 +265,11 @@ Sprinter.prototype.getMilestones = function(mainCallback) {
                 err.repo = org + '/' + repo;
                 localCallback(err);
             } else {
-                localCallback(err, _.map(milestones, function(milestone) {
-                    milestone.repo = org + '/' + repo;
-                    return milestone;
-                }));
+                applyPaginator(milestones, {}, me.gh.issues.getAllMilestones, slug, null, localCallback);
+//                localCallback(err, _.map(milestones, function(milestone) {
+//                    milestone.repo = org + '/' + repo;
+//                    return milestone;
+//                }));
             }
         });
     }, function(err, milestones) {
