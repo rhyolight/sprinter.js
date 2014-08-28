@@ -141,6 +141,10 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
                 getRemainingPages(pageResults, pageCallback);
             });
         } else {
+            // Attache a repo object to each result so users can tell what repo it is coming from.
+            _.each(allPages, function(item) {
+                item.repo = slug;
+            });
             pageCallback(null, allPages);
         }
     }

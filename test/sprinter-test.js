@@ -116,6 +116,17 @@ describe('sprinter', function() {
             });
         });
 
+        it('attaches a repo to each issue', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+            sprinter.getIssues(function(err, issues) {
+                expect(err).to.not.exist;
+                expect(issues[0]).to.have.property('repo');
+                expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
+                done();
+            });
+        });
+
         it('handles errors when repo does not exist', function(done) {
             var sprinter = new Sprinter('user', 'pass', ['numenta/does not exist']);
 
@@ -225,9 +236,20 @@ describe('sprinter', function() {
         it('fetches labels from all repos', function(done) {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
-            sprinter.getLabels(function(err, issues) {
+            sprinter.getLabels(function(err, labels) {
                 expect(err).to.not.exist;
-                expect(issues).to.have.length(mockNupicLabels.length + mockSprinterLabels.length, 'Wrong length of returned labels.');
+                expect(labels).to.have.length(mockNupicLabels.length + mockSprinterLabels.length, 'Wrong length of returned labels.');
+                done();
+            });
+        });
+
+        it('attaches a repo to each label', function(done) {
+            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+            sprinter.getLabels(function(err, labels) {
+                expect(err).to.not.exist;
+                expect(labels[0]).to.have.property('repo');
+                expect(labels[0].repo).to.equal('numenta/nupic');
                 done();
             });
         });

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.15
+
+* Bugfix: Each fetched object should have a 'repo' attribute.
+
 ## 0.1.14
 
 * Adds pagination for labels, milestones, collaborators.
