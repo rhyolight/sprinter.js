@@ -289,8 +289,14 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
         }, milestone);
         me.gh.issues.createMilestone(payload, function(err, result) {
             if (err) {
-                err.repo = org + '/' + repo;
-                localCallback(err);
+                // If the error is a "already_exists", we can ignore it.
+                console.log(err);
+                if (JSON.parse(err.message).errors[0].code == 'already_exists') {
+                    localCallback(null, err);
+                } else {
+                    err.repo = org + '/' + repo;
+                    localCallback(err);
+                }
             } else {
                 localCallback(err, result);
             }
