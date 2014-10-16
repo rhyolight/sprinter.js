@@ -87,8 +87,9 @@ function deduplicateCollaborators(collaborators) {
  * @param username {string} GitHub username credential for authentication.
  * @param password {string} GitHub password credential for authentication.
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
+ * @param cache {int} How many seconds to cache fetched results. Default is 0.
  */
-function Sprinter(username, password, repoSlugs) {
+function Sprinter(username, password, repoSlugs, cache) {
     if (! username) {
         throw new Error('Missing username.');
     }
@@ -111,7 +112,71 @@ function Sprinter(username, password, repoSlugs) {
         username: this.username,
         password: this.password
     });
+    this._CACHE = {};
+    this.setCacheDuration(cache);
+    this._setupCaching();
 }
+
+Sprinter.prototype._cacheIsValid = function(cacheKey) {
+    var cache = this._CACHE[cacheKey];
+    if (! cache) {
+        return false;
+    }
+    return (new Date().getTime() < cache.time + this._cacheDuration * 1000);
+};
+
+
+/**
+ * Wraps calls to get* functions with a function that caches results.
+ */
+Sprinter.prototype._setupCaching = function() {
+    var cacheDuration = this._cacheDuration
+      , me = this;
+    _.each(Sprinter.prototype, function(fn, name) {
+        if (name.indexOf('get') == 0) {
+            Sprinter.prototype[name] = function() {
+
+                // Default cache key is function name.
+                var cacheKey = name
+                  , callback
+                  , newArguments = [];
+
+                function resultCacher(err, result) {
+                    // Don't cache on error.
+                    if (err) {
+                        return callback(err);
+                    }
+                    me._CACHE[cacheKey] = {
+                        time: new Date().getTime()
+                      , value: result
+                    };
+                    callback(err, result);
+                }
+
+                // If function was passed a filter object, we must update the 
+                // cache key to include specific filters.
+                if (typeof(arguments[0]) == 'object') {
+                    cacheKey = name + JSON.stringify(arguments[0]);
+                    // 2nd parameter will be a callback if the first was a filter.
+                    callback = arguments[1];
+                    newArguments = [arguments[0], resultCacher]
+                } else {
+                    // 1st parameter is a callback if there was no filter.
+                    callback = arguments[0];
+                    newArguments = [resultCacher]
+                }
+
+                // If result has already been cached, use it.
+                if (me._cacheIsValid(cacheKey, cacheDuration)) {
+                    callback(null, me._CACHE[cacheKey].value);
+                } else {
+                    fn.apply(me, newArguments);
+                }
+
+            };
+        }
+    });
+};
 
 Sprinter.prototype._eachRepo = function(fn, mainCallback) {
     var funcs = this.repos.map(function(repoSlug) {
@@ -157,6 +222,14 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
         }
     });
 };
+
+/**
+ * Allows users to reset cache duration on a sprinter instance.
+ * @param duration {int} seconds to cache results.
+ */
+Sprinter.prototype.setCacheDuration = function(duration) {
+    this._cacheDuration = duration;
+}
 
 /**
  * Returns all issues across all monitored repos. Optional filters can be provided
@@ -290,7 +363,6 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
         me.gh.issues.createMilestone(payload, function(err, result) {
             if (err) {
                 // If the error is a "already_exists", we can ignore it.
-                console.log(err);
                 if (JSON.parse(err.message).errors[0].code == 'already_exists') {
                     localCallback(null, err);
                 } else {
