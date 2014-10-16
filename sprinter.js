@@ -137,7 +137,7 @@ Sprinter.prototype._setupCaching = function() {
       , me = this;
     _.each(originalPrototypeFunctions, function(fn, name) {
         if (name.indexOf('get') == 0) {
-            console.log('wrapping %s', name);
+            // console.log('wrapping %s', name);
             Sprinter.prototype[name] = function() {
 
                 // Default cache key is function name.
@@ -152,7 +152,7 @@ Sprinter.prototype._setupCaching = function() {
                     }
                     // Don't cache if duration is 0.
                     if (me._cacheDuration) {
-                        console.log('caching response for %s', cacheKey);
+                        // console.log('caching response for %s', cacheKey);
                         me._CACHE[cacheKey] = {
                             time: new Date().getTime()
                           , value: result
@@ -176,10 +176,10 @@ Sprinter.prototype._setupCaching = function() {
 
                 // If result has already been cached, use it.
                 if (me._cacheIsValid(cacheKey, cacheDuration)) {
-                    console.log('using cache for %s', cacheKey);
+                    // console.log('using cache for %s', cacheKey);
                     callback(null, me._CACHE[cacheKey].value);
                 } else {
-                    console.log('skipping cache for %s', cacheKey);
+                    // console.log('skipping cache for %s', cacheKey);
                     fn.apply(me, newArguments);
                 }
 
@@ -239,7 +239,7 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
  * @param duration {int} seconds to cache results.
  */
 Sprinter.prototype.setCacheDuration = function(duration) {
-    console.log('setting cache duration to %s', duration);
+    // console.log('setting cache duration to %s', duration);
     this._cacheDuration = duration;
 }
 
