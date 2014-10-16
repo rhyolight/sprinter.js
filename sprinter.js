@@ -3,6 +3,7 @@ var GitHubApi = require('github')
   , async = require('async')
   , pageRegex = new RegExp("&page=(\\d*)")
   , relRegex = new RegExp("rel=\"(.*)\"")
+  , originalPrototypeFunctions = {}
   ;
 
 /**
@@ -38,11 +39,13 @@ function attachReadableErrorMessage(err) {
     }
     // 410 means repo has no GitHub Issues
     else if (err.code == 410 && err.repo) {
-        err.message = '"' + err.repo + '" has no GitHub Issues associated with it.';
+        err.message = '"' + err.repo 
+            + '" has no GitHub Issues associated with it.';
     }
     // 422 means validation error
     else if (err.code == 422 && err.repo) {
-        err.message = 'Validation error on "' + err.repo + '": ' + JSON.stringify(errorMessage.errors);
+        err.message = 'Validation error on "' + err.repo + '": '
+            + JSON.stringify(errorMessage.errors);
     }
     return err;
 }
@@ -87,8 +90,9 @@ function deduplicateCollaborators(collaborators) {
  * @param username {string} GitHub username credential for authentication.
  * @param password {string} GitHub password credential for authentication.
  * @param repoSlugs {string[]} List of repository slug strings to operate upon.
+ * @param cache {int} How many seconds to cache fetched results. Default is 0.
  */
-function Sprinter(username, password, repoSlugs) {
+function Sprinter(username, password, repoSlugs, cache) {
     if (! username) {
         throw new Error('Missing username.');
     }
@@ -111,7 +115,78 @@ function Sprinter(username, password, repoSlugs) {
         username: this.username,
         password: this.password
     });
+    this._CACHE = {};
+    this.setCacheDuration(cache);
+    this._setupCaching();
 }
+
+Sprinter.prototype._cacheIsValid = function(cacheKey) {
+    var cache = this._CACHE[cacheKey];
+    if (! cache) {
+        return false;
+    }
+    return (new Date().getTime() < cache.time + this._cacheDuration * 1000);
+};
+
+
+/**
+ * Wraps calls to get* functions with a function that caches results.
+ */
+Sprinter.prototype._setupCaching = function() {
+    var cacheDuration = this._cacheDuration
+      , me = this;
+    _.each(originalPrototypeFunctions, function(fn, name) {
+        if (name.indexOf('get') == 0) {
+            console.log('wrapping %s', name);
+            Sprinter.prototype[name] = function() {
+
+                // Default cache key is function name.
+                var cacheKey = name
+                  , callback
+                  , newArguments = [];
+
+                function resultCacher(err, result) {
+                    // Don't cache on error.
+                    if (err) {
+                        return callback(err);
+                    }
+                    // Don't cache if duration is 0.
+                    if (me._cacheDuration) {
+                        console.log('caching response for %s', cacheKey);
+                        me._CACHE[cacheKey] = {
+                            time: new Date().getTime()
+                          , value: result
+                        };
+                    }
+                    callback(err, result);
+                }
+
+                // If function was passed a filter object, we must update the 
+                // cache key to include specific filters.
+                if (typeof(arguments[0]) == 'object') {
+                    cacheKey = name + JSON.stringify(arguments[0]);
+                    // 2nd parameter will be a callback if the first was a filter.
+                    callback = arguments[1];
+                    newArguments = [arguments[0], resultCacher]
+                } else {
+                    // 1st parameter is a callback if there was no filter.
+                    callback = arguments[0];
+                    newArguments = [resultCacher]
+                }
+
+                // If result has already been cached, use it.
+                if (me._cacheIsValid(cacheKey, cacheDuration)) {
+                    console.log('using cache for %s', cacheKey);
+                    callback(null, me._CACHE[cacheKey].value);
+                } else {
+                    console.log('skipping cache for %s', cacheKey);
+                    fn.apply(me, newArguments);
+                }
+
+            };
+        }
+    });
+};
 
 Sprinter.prototype._eachRepo = function(fn, mainCallback) {
     var funcs = this.repos.map(function(repoSlug) {
@@ -141,7 +216,8 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
                 getRemainingPages(pageResults, pageCallback);
             });
         } else {
-            // Attache a repo object to each result so users can tell what repo it is coming from.
+            // Attach a repo object to each result so users can tell what repo it
+            // is coming from.
             _.each(allPages, function(item) {
                 item.repo = slug;
             });
@@ -157,6 +233,15 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
         }
     });
 };
+
+/**
+ * Allows users to reset cache duration on a sprinter instance.
+ * @param duration {int} seconds to cache results.
+ */
+Sprinter.prototype.setCacheDuration = function(duration) {
+    console.log('setting cache duration to %s', duration);
+    this._cacheDuration = duration;
+}
 
 /**
  * Returns all issues across all monitored repos. Optional filters can be provided
@@ -205,7 +290,8 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         }
     };
 
-    // If the user specified only one repository to query, we don't want to query all the others.
+    // If the user specified only one repository to query, we don't want to query
+    // all the others.
     if (filters.repo) {
         filterOrg = filters.repo.split('/').shift();
         filterRepo = filters.repo.split('/').pop()
@@ -223,7 +309,9 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 Sprinter.prototype.getMilestones = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        me._fetchAllPages(me.gh.issues.getAllMilestones, {user: org, repo: repo}, localCallback);
+        me._fetchAllPages(
+            me.gh.issues.getAllMilestones, {user: org, repo: repo}, localCallback
+        );
     }, function(err, milestones) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -290,7 +378,6 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
         me.gh.issues.createMilestone(payload, function(err, result) {
             if (err) {
                 // If the error is a "already_exists", we can ignore it.
-                console.log(err);
                 if (JSON.parse(err.message).errors[0].code == 'already_exists') {
                     localCallback(null, err);
                 } else {
@@ -323,24 +410,26 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
             user: org,
             repo: repo
         };
-        me._fetchAllPages(me.gh.issues.getAllMilestones, payload, function(err, milestones) {
-            var slug = org + '/' + repo;
-            if (err) {
-                localCallback(err);
-            } else {
-                var match = _.find(milestones, function(milestone) {
-                        return milestone.title == title;
-                    }),
-                    result = undefined;
-                if (match) {
-                    result = {
-                        repo: slug,
-                        number: match.number
+        me._fetchAllPages(me.gh.issues.getAllMilestones, payload, 
+            function(err, milestones) {
+                var slug = org + '/' + repo;
+                if (err) {
+                    localCallback(err);
+                } else {
+                    var match = _.find(milestones, function(milestone) {
+                            return milestone.title == title;
+                        }),
+                        result = undefined;
+                    if (match) {
+                        result = {
+                            repo: slug,
+                            number: match.number
+                        }
                     }
+                    localCallback(null, result);
                 }
-                localCallback(null, result);
             }
-        });
+        );
     }, function(err, milestonesToUpdate) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -373,7 +462,8 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
 
 /**
  * Creates the same labels across all monitored repos.
- * @param labels {Array} Should be a list of objects, each with a name and hex color (without the #).
+ * @param labels {Array} Should be a list of objects, each with a name and hex 
+ *                       color (without the #).
  * @param mainCallback {function} Called with err, created labels.
  */
 Sprinter.prototype.createLabels = function(labels, mainCallback) {
@@ -413,7 +503,9 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
 Sprinter.prototype.getLabels = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        me._fetchAllPages(me.gh.issues.getLabels, {user: org, repo: repo}, localCallback);
+        me._fetchAllPages(
+            me.gh.issues.getLabels, {user: org, repo: repo}, localCallback
+        );
     }, function(err, labels) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -430,7 +522,9 @@ Sprinter.prototype.getLabels = function(mainCallback) {
 Sprinter.prototype.getCollaborators = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
-        me._fetchAllPages(me.gh.repos.getCollaborators, {user: org, repo: repo}, localCallback);
+        me._fetchAllPages(
+            me.gh.repos.getCollaborators, {user: org, repo: repo}, localCallback
+        );
     }, function(err, collaborators) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
@@ -440,5 +534,10 @@ Sprinter.prototype.getCollaborators = function(mainCallback) {
     });
 };
 
+_.each(Sprinter.prototype, function(fn, name) {
+    if (name.indexOf('get') == 0) {
+        originalPrototypeFunctions[name] = fn;
+    }
+});
 
 module.exports = Sprinter;
