@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.19
+
+* Added clearCache() function.
+
 ## 0.1.18
 
 * Removed logs.

@@ -244,6 +244,13 @@ Sprinter.prototype.setCacheDuration = function(duration) {
 }
 
 /**
+ * Clears the cache.
+ */
+Sprinter.prototype.clearCache = function() {
+    this._CACHE = {};
+};
+
+/**
  * Returns all issues across all monitored repos. Optional filters can be provided
  * to filter results.
  * @param [userFilters] {object} Filter, like {state: 'closed'}.
