@@ -95,16 +95,23 @@ function processArgs(args) {
         repoValue = process.env['SPRINTER_REPOS'];
     }
     if (! repoValue) {
-        console.error('Cannot identify target repositories! Provide either a --repos option or set the ' +
-            '$SPRINTER_REPOS environment variable.'.red);
-        printHelp();
-        process.exit(-1);
+        handleError('Cannot identify target repositories! Provide either a '
+            + '--repos option or set the $SPRINTER_REPOS environment '
+            + 'variable.');
     }
     try {
         monitoredRepos = readRepoFile(repoValue);
     } catch (error) {
         monitoredRepos = repoValue.split(',');
     }
+    // Validate monitoredRepos contains the org/repo slug pattern.
+    _.each(monitoredRepos, function(slug) {
+        if (slug.indexOf('/') == -1) {
+            handleError('Incorrect repo slug format for the --repos option. '
+                + 'Use "org/repo". You may have only specified the repository '
+                + 'name.');
+        }
+    });
 }
 
 function exitIfMissingGitHubCreds() {
