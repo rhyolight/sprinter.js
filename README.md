@@ -160,6 +160,15 @@ In addition to the regular GitHub API queries, you can also add `{repo: '<org>/<
     
 This will only query the `numenta/nupic` repository and return issues assigned to @rhyolight.
 
+### Listing All Pull Requests Across All Repos
+
+    sprinter.getPullRequests(function (err, issues) {
+       if (err) { return console.log(err); }
+       _.each(issues, function(issue) {
+           console.log('%s: (%s) %s', issue.id, issue.repo, issue.title);
+       });
+    });
+
 ### Listing All Milestones Across All Repos
 
 Milestones will be grouped by title.

@@ -241,7 +241,7 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
 Sprinter.prototype.setCacheDuration = function(duration) {
     // console.log('setting cache duration to %s', duration);
     this._cacheDuration = duration;
-}
+};
 
 /**
  * Clears the cache.
@@ -250,22 +250,25 @@ Sprinter.prototype.clearCache = function() {
     this._CACHE = {};
 };
 
-/**
- * Returns all issues across all monitored repos. Optional filters can be provided
- * to filter results.
- * @param [userFilters] {object} Filter, like {state: 'closed'}.
- * @param mainCallback {function} Called with err, issues when done. Issues are
- *                                sorted by updated_at.
+/*
+ * Issues and PRs are almost the same thing in GitHub's API, so this is just
+ * a convenience method to put all the logic in one place.
  */
-Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
+Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
     var me = this
       , defaultFilters = {state: 'open'}
       , filters
       , filterOrg
       , filterRepo
       , milestone
-      , issueFetcher
-      , issueResultHandler;
+      , prFetcher
+      , prResultHandler
+      , getter;
+    if (type == 'issue') {
+        getter = this.gh.issues.repoIssues;
+    } else {
+        getter = this.gh.pullRequests.getAll
+    }
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
@@ -276,24 +279,24 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
         delete filters.milestone;
     }
 
-    issueFetcher = function(org, repo, localCallback) {
+    prFetcher = function(org, repo, localCallback) {
         var localFilters = _.clone(filters);
         localFilters.user = org;
         localFilters.repo = repo;
-        me._fetchAllPages(me.gh.issues.repoIssues, localFilters, localCallback);
+        me._fetchAllPages(getter, localFilters, localCallback);
     };
 
-    issueResultHandler = function(err, issues) {
+    prResultHandler = function(err, prs) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
         } else {
             if (milestone) {
-                issues = _.filter(issues, function(issue) {
+                prs = _.filter(prs, function(issue) {
                     if (issue.milestone == null) { return false; }
                     return issue.milestone.title == milestone;
                 });
             }
-            mainCallback(null, sortIssues(issues));
+            mainCallback(null, sortIssues(prs));
         }
     };
 
@@ -302,10 +305,32 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
     if (filters.repo) {
         filterOrg = filters.repo.split('/').shift();
         filterRepo = filters.repo.split('/').pop()
-        issueFetcher(filterOrg, filterRepo, issueResultHandler);
+        prFetcher(filterOrg, filterRepo, prResultHandler);
     } else {
-        this._eachRepoFlattened(issueFetcher, issueResultHandler);
+        this._eachRepoFlattened(prFetcher, prResultHandler);
     }
+};
+
+/**
+ * Returns all issues across all monitored repos. Optional filters can be provided
+ * to filter results.
+ * @param [userFilters] {object} Filter, like {state: 'closed'}.
+ * @param mainCallback {function} Called with err, issues when done. Issues are
+ *                                sorted by updated_at.
+ */
+Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
+    this._getIssueOrPr('issue', userFilters, mainCallback);
+};
+
+/**
+ * Returns all prs across all monitored repos. Optional filters can be provided
+ * to filter results, but they are more limited than getting issues.
+ * @param [userFilters] {object} Filter, like {state: 'closed'}.
+ * @param mainCallback {function} Called with err, prs when done. PRs are
+ *                                sorted by updated_at.
+ */
+Sprinter.prototype.getPullRequests = function(userFilters, mainCallback) {
+    this._getIssueOrPr('pr', userFilters, mainCallback);
 };
 
 /**
