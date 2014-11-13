@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.21
+
+* Fixed nasty prototypal inheritance caching bug.
+
 ## 0.1.20
 
 * Added sprinter.getPullRequests() function.
