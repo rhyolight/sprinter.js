@@ -138,7 +138,7 @@ Sprinter.prototype._setupCaching = function() {
     _.each(originalPrototypeFunctions, function(fn, name) {
         if (name.indexOf('get') == 0) {
             // console.log('wrapping %s', name);
-            Sprinter.prototype[name] = function() {
+            me[name] = function() {
 
                 // Default cache key is function name.
                 var cacheKey = name
@@ -566,6 +566,7 @@ Sprinter.prototype.getCollaborators = function(mainCallback) {
     });
 };
 
+/* Stashes original prototype functions of Sprinter for use in caching. */
 _.each(Sprinter.prototype, function(fn, name) {
     if (name.indexOf('get') == 0) {
         originalPrototypeFunctions[name] = fn;

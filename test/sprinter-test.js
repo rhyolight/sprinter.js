@@ -62,6 +62,14 @@ describe('sprinter', function() {
 
         });
 
+        describe('with multiple instances', function() {
+            it('keeps instance properties separated by instance', function() {
+                var s1 = new Sprinter('my-username', 'my-password', ['repo/1','repo/2']);
+                var s2 = new Sprinter('my-username', 'my-password', ['repo/3','repo/4']);
+                expect(s1.repos).to.not.equal(s2.repos);
+            });
+        });
+
     });
 
     describe('when fetching issues', function() {
