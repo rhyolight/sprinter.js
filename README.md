@@ -30,7 +30,7 @@ Use [sprinter-dash](https://github.com/rhyolight/sprinter-dash)!
 
 ## Example Usage
 
-Sprinter is used as the backend to report on issues across all the repositories in the [Numenta GitHub Organization](https://github.com/numenta/) on our [status board](http://status.numenta.org/issues.html).
+Sprinter is used as the backend to report on issues across all the repositories in the [Numenta GitHub Organization](https://github.com/numenta/) on our [status board](http://status.numenta.org/issues).
 
 ## Installation
 
