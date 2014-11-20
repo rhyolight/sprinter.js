@@ -261,14 +261,16 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
       , filterOrg
       , filterRepo
       , milestone
-      , prFetcher
-      , prResultHandler
+      , fetcher
+      , resultHandler
       , getter;
+
     if (type == 'issue') {
         getter = this.gh.issues.repoIssues;
     } else {
         getter = this.gh.pullRequests.getAll
     }
+
     if (typeof(userFilters) == 'function' && mainCallback == undefined) {
         mainCallback = userFilters;
         userFilters = {};
@@ -279,24 +281,54 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
         delete filters.milestone;
     }
 
-    prFetcher = function(org, repo, localCallback) {
-        var localFilters = _.clone(filters);
+    fetcher = function(org, repo, localCallback) {
+        var fetchByState = {}
+          , localFilters = _.clone(filters);
         localFilters.user = org;
         localFilters.repo = repo;
-        me._fetchAllPages(getter, localFilters, localCallback);
+        // This logic is to allow for a state other than 'open' and 'closed'. The 'all' state
+        // should return both open and closed issues, which will require async calls to to the
+        // API to get issues with each state.
+        if (localFilters.state && localFilters.state == 'all') {
+            var openStateFilter = _.clone(localFilters)
+              , closedStateFilter = _.clone(localFilters);
+            openStateFilter.state = 'open';
+            closedStateFilter.state = 'closed';
+            fetchByState[openStateFilter.state] = function(fetchCallback) {
+                me._fetchAllPages(getter, openStateFilter, fetchCallback);
+            };
+            fetchByState[closedStateFilter.state] = function(fetchCallback) {
+                me._fetchAllPages(getter, closedStateFilter, fetchCallback);
+            };
+        } else {
+            fetchByState[localFilters.state] = function(fetchCallback) {
+                me._fetchAllPages(getter, localFilters, fetchCallback);
+            };
+        }
+        async.parallel(fetchByState, function(err, allIssues) {
+            if (err) {
+                return localCallback(err);
+            }
+            // If state is 'all', we need to concat the open and closed issues together.
+            if (localFilters.state && localFilters.state == 'all') {
+                localCallback(null, allIssues.open.concat(allIssues.closed));
+            } else {
+                localCallback(null, allIssues[localFilters.state]);
+            }
+        });
     };
 
-    prResultHandler = function(err, prs) {
+    resultHandler = function(err, result) {
         if (err) {
             mainCallback(attachReadableErrorMessage(err));
         } else {
             if (milestone) {
-                prs = _.filter(prs, function(issue) {
+                result = _.filter(result, function(issue) {
                     if (issue.milestone == null) { return false; }
                     return issue.milestone.title == milestone;
                 });
             }
-            mainCallback(null, sortIssues(prs));
+            mainCallback(null, sortIssues(result));
         }
     };
 
@@ -304,10 +336,10 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
     // all the others.
     if (filters.repo) {
         filterOrg = filters.repo.split('/').shift();
-        filterRepo = filters.repo.split('/').pop()
-        prFetcher(filterOrg, filterRepo, prResultHandler);
+        filterRepo = filters.repo.split('/').pop();
+        fetcher(filterOrg, filterRepo, resultHandler);
     } else {
-        this._eachRepoFlattened(prFetcher, prResultHandler);
+        this._eachRepoFlattened(fetcher, resultHandler);
     }
 };
 
