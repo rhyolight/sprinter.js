@@ -2,6 +2,9 @@ var assert = require('chai').assert,
     expect = require('chai').expect,
     mockNupicIssues = require('./mock-data/nupic-issues'),
     mockSprinterIssues = require('./mock-data/sprinter-issues'),
+    mockSprinterClosedIssues = require('./mock-data/sprinter-closed-issues'),
+    mockSprinterDashIssues = require('./mock-data/sprinter-dash-issues'),
+    mockSprinterDashClosedIssues = require('./mock-data/sprinter-dash-closed-issues'),
     mockNumentaMilestonesCreated = require('./mock-data/numenta-milestone-created'),
     mockRhyolightMilestonesCreated = require('./mock-data/rhyolight-milestone-created'),
     mockNupicLabels = require('./mock-data/nupic-labels'),
@@ -124,9 +127,75 @@ describe('sprinter', function() {
             });
         });
 
+        describe('when issue state is "all"', function() {
+            var mockGitHubInstance = {
+                authenticate: function() {},
+                hasNextPage: function() { return false; },
+                issues: {
+                    repoIssues: function(params, callback) {
+                        expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
+                        expect(params).to.have.keys(['user', 'repo', 'state'], 'GitHub params are missing data.');
+                        assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                        if (params.repo == 'sprinter.js') {
+                            if (params.state == 'open') {
+                                callback(null, mockSprinterIssues)
+                            } else if (params.state == 'closed') {
+                                callback(null, mockSprinterClosedIssues);
+                            } else {
+                                assert.fail('Unknown issue state "' + params.state + '"');
+                            }
+                        } else if (params.repo == 'sprinter-dash') {
+                            if (params.state == 'open') {
+                                callback(null, mockSprinterDashIssues)
+                            } else if (params.state == 'closed') {
+                                callback(null, mockSprinterDashClosedIssues);
+                            } else {
+                                assert.fail('Unknown issue state "' + params.state + '"');
+                            }
+                        } else {
+                            assert.fail('Unknown repo "' + params.repo + '"');
+                        }
+                    }
+                }
+            };
+            var Sprinter = proxyquire('../sprinter', {
+                'github': function () {
+                    return mockGitHubInstance;
+                }
+            });
+            describe('and only one repo', function() {
+                it('fetches both open and closed issues', function(done) {
+                    var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js']);
+                    sprinter.getIssues({state: 'all'}, function(err, issues) {
+                        expect(err).to.not.exist;
+                        expect(issues[0]).to.have.property('repo');
+                        expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
+                        // Expecting 3 open, 5 closed
+                        expect(issues).to.have.length(8, 'Wrong length of returned issues.');
+                        done();
+                    });
+
+                });
+            });
+            describe('for many repos', function() {
+                it('fetches both open and closed issues', function(done) {
+                    var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js', 'rhyolight/sprinter-dash']);
+                    sprinter.getIssues({state: 'all'}, function(err, issues) {
+                        expect(err).to.not.exist;
+                        expect(issues[0]).to.have.property('repo');
+                        expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
+                        // Expecting 3 open, 5 closed in sprinter.js and
+                        // 5 open, 1 closed from sprinter-dash, totalling 14 total
+                        expect(issues).to.have.length(14, 'Wrong length of returned issues.');
+                        done();
+                    });
+
+                });
+            });
+        });
+
         it('attaches a repo to each issue', function(done) {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
-
             sprinter.getIssues(function(err, issues) {
                 expect(err).to.not.exist;
                 expect(issues[0]).to.have.property('repo');

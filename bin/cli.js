@@ -19,9 +19,10 @@ availableCommands = {
     updateMilestones: updateMilestonesCli
 };
 
-availableCommands.listIssues.help       = "listIssues [--milestone=\"milestone name\"] "
-    + "[--assignee=\"github username\"]\n\t".cyan
-    + "Prints all issues. Optionally filters by milestone name.";
+availableCommands.listIssues.help       = ("listIssues [--milestone=\"milestone name\"] "
+    + "[--state=\"open/closed/all\"]\n\t"
+    + "[--assignee=\"github username\"]\n\t").cyan
+    + "Prints all issues. Optionally filters by milestone name, assignee, or state.";
 availableCommands.listMilestones.help   = "listMilestones\n\t".cyan
     + "Prints all milestones.";
 availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t".cyan
@@ -142,6 +143,9 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
     }
     if (kwargs.assignee) {
         filters.assignee = kwargs.assignee;
+    }
+    if (kwargs.state) {
+        filters.state = kwargs.state;
     }
     commandArgs.push(filters);
     commandArgs.push(function(err, issues) {

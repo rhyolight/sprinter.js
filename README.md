@@ -51,36 +51,37 @@ Now you can run `sprinter` from the command line.
 Displays usage information.
 
     Sprinter CLI Tool: Utilities for operating on issue trackers of several repositories at once.
-    
+
     REQUIREMENTS
     Environment variables with the GitHub username and personal access token (NOT your master password) for API calls:
-    	GH_USERNAME=<username>
-    	GH_PASSWORD=<personal access token>
+        GH_USERNAME=<username>
+        GH_PASSWORD=<personal access token>
     Create a personal access token for sprinter.js at https://github.com/settings/applications -> 'Generate token' with 'repo', 'public_repo', and 'repo:status' checked.
-    
+
     USAGE
         sprinter <command> <cmd-options> --repos=org/repo,org2/repo2
      or
         sprinter <command> <cmd-options> --repos=./path/to/repo/file
-    
+
     The repo file should have one repo slug on each line. Instead of providing a --repos option, you could
     set the $SPRINTER_REPOS environment variable instead.
-    
+
     COMMANDS
     printRepos
-    	Prints the repositories Sprinter is configured to run against.
-    listIssues [--milestone="milestone name"] [--assignee="github username"]
-    	Prints all issues. Optionally filters by milestone name.
+        Prints the repositories Sprinter is configured to run against.
+    listIssues [--milestone="milestone name"] [--state="open/closed/all"]
+        [--assignee="github username"]
+        Prints all issues. Optionally filters by milestone name, assignee, or state.
     listMilestones
-    	Prints all milestones.
+        Prints all milestones.
     createMilestones <title> <due_on>
-    	Creates new milestone in each repo with given title and due date.
-    	`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
+        Creates new milestone in each repo with given title and due date.
+        `due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
     closeMilestones <title>
-    	Closes all milestones matching title across all repos.
+        Closes all milestones matching title across all repos.
     updateMilestones <title> <new-title> [due_on]
-    	Updates all milestones matching title across all repos.
-    
+        Updates all milestones matching title across all repos.
+
     EXAMPLE
     sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
 
@@ -159,6 +160,8 @@ In addition to the regular GitHub API queries, you can also add `{repo: '<org>/<
     });
     
 This will only query the `numenta/nupic` repository and return issues assigned to @rhyolight.
+
+For `getIssues`, you may also use `{state: 'all'}` to get both `open` and `closed` issues.
 
 ### Listing All Pull Requests Across All Repos
 
