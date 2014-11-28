@@ -58,13 +58,12 @@ function printHelp() {
     console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster'.yellow);
 }
 
-function handleError(message, exitCode) {
+function handleError(message, printUsage) {
     console.error(message.red);
-    printHelp();
-    if (exitCode == undefined) {
-        exitCode = -1;
+    if (printUsage) {
+        printHelp();
     }
-    process.exit(exitCode);
+    process.exit(-1);
 }
 
 function readRepoFile(path) {
@@ -110,7 +109,8 @@ function processArgs(args) {
         if (slug.indexOf('/') == -1) {
             handleError('Incorrect repo slug format for the --repos option. '
                 + 'Use "org/repo". You may have only specified the repository '
-                + 'name.');
+                + 'name. See the help message below for more details about '
+                + 'the --repos option.', true);
         }
     });
 }
@@ -119,11 +119,10 @@ function exitIfMissingGitHubCreds() {
     githubUsername = process.env['GH_USERNAME'];
     githubPassword = process.env['GH_PASSWORD'];
     if (! githubUsername || ! githubPassword) {
-        console.error(('You must set your GitHub credentials into the '
+        handleError('You must set your GitHub credentials into the '
                     + 'environment for this script to run.\n'
                     + '    export GH_USERNAME=<username>\n'
-                    + '    export GH_USERNAME=<username>').red);
-        process.exit(-1);
+                    + '    export GH_USERNAME=<username>', true);
     }
 }
 
@@ -215,11 +214,11 @@ sprinter = new Sprinter(
 );
 
 if (! command) {
-    handleError('Missing command!');
+    handleError('Missing command!', true);
 }
 
 if (! availableCommands[command]) {
-    handleError('Unknown command "' + command + '"!', -1);
+    handleError('Unknown command "' + command + '"!', true);
 }
 
 availableCommands[command](sprinter, command, commandArgs, kwargs);

@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1
+
+* Better usage printing for CLI parse problems (not errors that occur within the API calls).
+
 ## 1.0.0
 
 * Adds new issue state 'all'
