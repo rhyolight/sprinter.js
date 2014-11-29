@@ -28,18 +28,31 @@ function sortIssues(issues) {
 
 function attachReadableErrorMessage(err) {
     var errorMessage;
+
+    // If the error doesn't have a "repo" attached to it, it's a hard error.
+    // This should always be attached by sprinter before it gets to the user.
+    if (! err.repo) {
+        throw new Error('Error does not identify a repository!');
+    }
+
     try {
         errorMessage = JSON.parse(err.message);
     } catch (jsonParseError) {
-        return err;
+        errorMessage = 'Unable to parse error message. Entire error is: "'
+            + err.toString() + '"';
+    }
+    // 403 means unauthorized.
+    if (err.code == 403) {
+        err.message = 'You must have push access to run this operation on "'
+            + err.repo + '".';
     }
     // 404 means unknown repo
-    if (err.code == 404 && err.repo) {
+    else if (err.code == 404 && err.repo) {
         err.message = 'Unknown repository: "' + err.repo + '"';
     }
     // 410 means repo has no GitHub Issues
     else if (err.code == 410 && err.repo) {
-        err.message = '"' + err.repo 
+        err.message = '"' + err.repo
             + '" has no GitHub Issues associated with it.';
     }
     // 422 means validation error
@@ -48,6 +61,13 @@ function attachReadableErrorMessage(err) {
             + JSON.stringify(errorMessage.errors);
     }
     return err;
+}
+
+
+function attachReadableErrorMessages(errs) {
+    return _.map(errs, function(err) {
+        return attachReadableErrorMessage(err);
+    });
 }
 
 /**
@@ -107,13 +127,13 @@ function Sprinter(username, password, repoSlugs, cache) {
     // Verify required configuration elements.
     this.repos = convertSlugsToObjects(repoSlugs);
     this.gh = new GitHubApi({
-        version: '3.0.0',
-        timeout: 5000
+        version: '3.0.0'
+      , timeout: 5000
     });
     this.gh.authenticate({
-        type: 'basic',
-        username: this.username,
-        password: this.password
+        type: 'basic'
+      , username: this.username
+      , password: this.password
     });
     this._CACHE = {};
     this.setCacheDuration(cache);
@@ -146,16 +166,13 @@ Sprinter.prototype._setupCaching = function() {
                   , newArguments = [];
 
                 function resultCacher(err, result) {
-                    // Don't cache on error.
-                    if (err) {
-                        return callback(err);
-                    }
                     // Don't cache if duration is 0.
                     if (me._cacheDuration) {
-                        // console.log('caching response for %s', cacheKey);
+                        //console.log('caching response for %s', cacheKey);
                         me._CACHE[cacheKey] = {
                             time: new Date().getTime()
-                          , value: result
+                          , result: result
+                          , errors: err
                         };
                     }
                     callback(err, result);
@@ -165,7 +182,8 @@ Sprinter.prototype._setupCaching = function() {
                 // cache key to include specific filters.
                 if (typeof(arguments[0]) == 'object') {
                     cacheKey = name + JSON.stringify(arguments[0]);
-                    // 2nd parameter will be a callback if the first was a filter.
+                    // 2nd parameter will be a callback if the first was a
+                    // filter.
                     callback = arguments[1];
                     newArguments = [arguments[0], resultCacher]
                 } else {
@@ -177,7 +195,9 @@ Sprinter.prototype._setupCaching = function() {
                 // If result has already been cached, use it.
                 if (me._cacheIsValid(cacheKey, cacheDuration)) {
                     // console.log('using cache for %s', cacheKey);
-                    callback(null, me._CACHE[cacheKey].value);
+                    callback(
+                        me._CACHE[cacheKey].errors, me._CACHE[cacheKey].result
+                    );
                 } else {
                     // console.log('skipping cache for %s', cacheKey);
                     fn.apply(me, newArguments);
@@ -189,14 +209,48 @@ Sprinter.prototype._setupCaching = function() {
 };
 
 Sprinter.prototype._eachRepo = function(fn, mainCallback) {
-    var funcs = this.repos.map(function(repoSlug) {
-        var org = repoSlug[0],
-            repo = repoSlug[1];
-        return function(callback) {
-            fn(org, repo, callback);
-        };
+    var asyncErrors = []
+      , funcs = this.repos.map(function(repoSlug) {
+            var org = repoSlug[0]
+              , repo = repoSlug[1]
+              , slug = org + '/' + repo;
+            return function(callback) {
+                fn(org, repo, function(error, data) {
+                    // All errors must have a "repo" property to identify
+                    // where they came from.
+                    function addRepoToError(err) {
+                        err.repo = slug;
+                        return err;
+                    }
+                    if (error) {
+                        // Depending on which API function gets called, this
+                        // error object could be an Array or just one Error
+                        // object, so we'll have to deal with both.
+                        if (error.length !== undefined) {
+                            asyncErrors = asyncErrors.concat(
+                                _.each(error, addRepoToError)
+                            );
+                        } else {
+                            asyncErrors.push(addRepoToError(error));
+                        }
+                    }
+                    callback(null, data);
+                });
+            };
+        });
+    async.parallel(funcs, function(err, data) {
+        // Overrides the default async behavior of stopping on errors by
+        // collecting them here, converting them into readable messages, and
+        // passing them all back to the main callback. The "data" array might
+        // have null values, which usually happens if there is an error, so we
+        // make sure to filter out the nulls.
+        mainCallback(
+            attachReadableErrorMessages(asyncErrors)
+          , _.filter(data, function(item) {
+                return item;
+            })
+        );
     });
-    async.parallel(funcs, mainCallback);
 };
 
 Sprinter.prototype._eachRepoFlattened = function(fn, mainCallback) {
@@ -216,8 +270,8 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
                 getRemainingPages(pageResults, pageCallback);
             });
         } else {
-            // Attach a repo object to each result so users can tell what repo it
-            // is coming from.
+            // Attach a repo object to each result so users can tell what repo
+            // it is coming from.
             _.each(allPages, function(item) {
                 item.repo = slug;
             });
@@ -226,7 +280,6 @@ Sprinter.prototype._fetchAllPages = function(fetchFunction, params, callback) {
     }
     fetchFunction(params, function(err, pageOneResults) {
         if (err) {
-            err.repo = slug;
             callback(err);
         } else {
             getRemainingPages(pageOneResults, callback);
@@ -283,57 +336,79 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
 
     fetcher = function(org, repo, localCallback) {
         var fetchByState = {}
+          , asyncErrors = []
           , localFilters = _.clone(filters);
         localFilters.user = org;
         localFilters.repo = repo;
-        // This logic is to allow for a state other than 'open' and 'closed'. The 'all' state
-        // should return both open and closed issues, which will require async calls to to the
-        // API to get issues with each state.
+
+        // This exists so we can populate an errors object from the async calls.
+        // Otherwise if there is an error passed to the async callback, the
+        // async module will stop executing remaining functions.
+        function getFetchByStateCallback(callback) {
+            return function(err, data) {
+                if (err) {
+                    asyncErrors.push(err);
+                }
+                callback(null, data);
+            };
+        }
+
+        // This logic is to allow for a state other than 'open' and 'closed'.
+        // The 'all' state should return both open and closed issues, which will
+        // require async calls to to the API to get issues with each state.
         if (localFilters.state && localFilters.state == 'all') {
             var openStateFilter = _.clone(localFilters)
               , closedStateFilter = _.clone(localFilters);
             openStateFilter.state = 'open';
             closedStateFilter.state = 'closed';
             fetchByState[openStateFilter.state] = function(fetchCallback) {
-                me._fetchAllPages(getter, openStateFilter, fetchCallback);
+                me._fetchAllPages(
+                    getter
+                  , openStateFilter
+                  , getFetchByStateCallback(fetchCallback)
+                );
             };
             fetchByState[closedStateFilter.state] = function(fetchCallback) {
-                me._fetchAllPages(getter, closedStateFilter, fetchCallback);
+                me._fetchAllPages(
+                    getter
+                  , closedStateFilter
+                  , getFetchByStateCallback(fetchCallback)
+                );
             };
         } else {
             fetchByState[localFilters.state] = function(fetchCallback) {
-                me._fetchAllPages(getter, localFilters, fetchCallback);
+                me._fetchAllPages(
+                    getter
+                  , localFilters
+                  , getFetchByStateCallback(fetchCallback)
+                );
             };
         }
         async.parallel(fetchByState, function(err, allIssues) {
-            if (err) {
-                return localCallback(err);
-            }
-            // If state is 'all', we need to concat the open and closed issues together.
+            // If state is 'all', we need to concat the open and closed issues
+            // together.
             if (localFilters.state && localFilters.state == 'all') {
-                localCallback(null, allIssues.open.concat(allIssues.closed));
+                localCallback(
+                    asyncErrors, allIssues.open.concat(allIssues.closed)
+                );
             } else {
-                localCallback(null, allIssues[localFilters.state]);
+                localCallback(asyncErrors, allIssues[localFilters.state]);
             }
         });
     };
 
-    resultHandler = function(err, result) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
-        } else {
-            if (milestone) {
-                result = _.filter(result, function(issue) {
-                    if (issue.milestone == null) { return false; }
-                    return issue.milestone.title == milestone;
-                });
-            }
-            mainCallback(null, sortIssues(result));
+    resultHandler = function(errors, result) {
+        if (milestone) {
+            result = _.filter(result, function(issue) {
+                if (issue.milestone == null) { return false; }
+                return issue.milestone.title == milestone;
+            });
         }
+        mainCallback(errors, sortIssues(result));
     };
 
-    // If the user specified only one repository to query, we don't want to query
-    // all the others.
+    // If the user specified only one repository to query, we don't want to
+    // query all the others.
     if (filters.repo) {
         filterOrg = filters.repo.split('/').shift();
         filterRepo = filters.repo.split('/').pop();
@@ -344,8 +419,8 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
 };
 
 /**
- * Returns all issues across all monitored repos. Optional filters can be provided
- * to filter results.
+ * Returns all issues across all monitored repos. Optional filters can be
+ * provided to filter results.
  * @param [userFilters] {object} Filter, like {state: 'closed'}.
  * @param mainCallback {function} Called with err, issues when done. Issues are
  *                                sorted by updated_at.
@@ -374,14 +449,15 @@ Sprinter.prototype.getMilestones = function(mainCallback) {
     var me = this;
     this._eachRepoFlattened(function(org, repo, localCallback) {
         me._fetchAllPages(
-            me.gh.issues.getAllMilestones, {user: org, repo: repo}, localCallback
+            me.gh.issues.getAllMilestones
+          , {user: org, repo: repo}
+          , localCallback
         );
     }, function(err, milestones) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
-        } else {
-            mainCallback(err, _.groupBy(milestones, 'title'));
-        }
+        mainCallback(
+            attachReadableErrorMessages(err)
+          , _.groupBy(milestones, 'title')
+        );
     });
 };
 
@@ -405,20 +481,15 @@ Sprinter.prototype.closeMilestones = function(title, mainCallback) {
                 var updaters = _.map(matches, function(match) {
                     var splitSlug = match.repo.split('/');
                     return function(localCallback) {
-                        me.gh.issues.updateMilestone({
-                            user: splitSlug[0],
-                            repo: splitSlug[1],
-                            number: match.number,
-                            title: match.title,
-                            state: 'closed'
-                        }, function(err, resp) {
-                            if (err) {
-                                err.repo = org + '/' + repo;
-                                localCallback(err);
-                            } else {
-                                localCallback(err, resp);
+                        me.gh.issues.updateMilestone(
+                            { user: splitSlug[0]
+                            , repo: splitSlug[1]
+                            , number: match.number
+                            , title: match.title
+                            , state: 'closed'
                             }
-                        });
+                          , localCallback
+                        );
                     };
                 });
                 async.parallel(updaters, mainCallback);
@@ -436,28 +507,12 @@ Sprinter.prototype.createMilestones = function(milestone, mainCallback) {
     var me = this;
     this._eachRepo(function(org, repo, localCallback) {
         var payload = _.extend({
-            user: org,
-            repo: repo
+            user: org
+          , repo: repo
         }, milestone);
-        me.gh.issues.createMilestone(payload, function(err, result) {
-            if (err) {
-                // If the error is a "already_exists", we can ignore it.
-                if (JSON.parse(err.message).errors[0].code == 'already_exists') {
-                    localCallback(null, err);
-                } else {
-                    err.repo = org + '/' + repo;
-                    localCallback(err);
-                }
-            } else {
-                localCallback(err, result);
-            }
-        });
+        me.gh.issues.createMilestone(payload, localCallback);
     }, function(err, response) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
-        } else {
-            mainCallback(err, response);
-        }
+        mainCallback(attachReadableErrorMessages(err), response);
     });
 };
 
@@ -471,8 +526,8 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
     var me = this;
     this._eachRepo(function(org, repo, localCallback) {
         var payload = {
-            user: org,
-            repo: repo
+            user: org
+          , repo: repo
         };
         me._fetchAllPages(me.gh.issues.getAllMilestones, payload, 
             function(err, milestones) {
@@ -482,12 +537,12 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
                 } else {
                     var match = _.find(milestones, function(milestone) {
                             return milestone.title == title;
-                        }),
-                        result = undefined;
+                        })
+                      , result = undefined;
                     if (match) {
                         result = {
-                            repo: slug,
-                            number: match.number
+                            repo: slug
+                          , number: match.number
                         }
                     }
                     localCallback(null, result);
@@ -499,25 +554,31 @@ Sprinter.prototype.updateMilestones = function(title, milestone, mainCallback) {
             mainCallback(attachReadableErrorMessage(err));
         } else {
             me._eachRepo(function(org, repo, milestoneUpdateCallback) {
-                var slug = org + '/' + repo,
-                    milestoneToUpdate = _.find(milestonesToUpdate, function(ms) {
-                        return ms && ms.repo == slug;
-                    }),
-                    payload = undefined;
+                var slug = org + '/' + repo
+                  , milestoneToUpdate = _.find(
+                        milestonesToUpdate
+                      , function(ms) {
+                            return ms && ms.repo == slug;
+                        }
+                    )
+                  , payload = undefined;
                 if (milestoneToUpdate) {
                     payload = _.extend({
-                        user: org,
-                        repo: repo,
-                        number: milestoneToUpdate.number,
+                        user: org
+                      , repo: repo
+                      , number: milestoneToUpdate.number
                     }, milestone);
-                    me.gh.issues.updateMilestone(payload, function(err, result) {
-                        if (err) {
-                            err.repo = org + '/' + repo;
-                            milestoneUpdateCallback(err);
-                        } else {
-                            milestoneUpdateCallback(err, result);
-                        }
-                    });
+                    me.gh.issues.updateMilestone(
+                        payload
+                      , function(err, result) {
+                          if (err) {
+                              err.repo = org + '/' + repo;
+                              milestoneUpdateCallback(err);
+                          } else {
+                              milestoneUpdateCallback(err, result);
+                          }
+                      }
+                    );
                 }
             }, mainCallback);
         }
@@ -535,8 +596,8 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
     this._eachRepo(function(org, repo, localCallback) {
         var createFunctions = _.map(labels, function(labelSpec) {
             var payload = _.extend({
-                user: org,
-                repo: repo
+                user: org
+              , repo: repo
             }, labelSpec);
             return function(callback) {
                 me.gh.issues.createLabel(payload, function(err, resp) {
@@ -571,11 +632,7 @@ Sprinter.prototype.getLabels = function(mainCallback) {
             me.gh.issues.getLabels, {user: org, repo: repo}, localCallback
         );
     }, function(err, labels) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
-        } else {
-            mainCallback(err, labels);
-        }
+        mainCallback(attachReadableErrorMessages(err), labels);
     });
 };
 
@@ -590,11 +647,10 @@ Sprinter.prototype.getCollaborators = function(mainCallback) {
             me.gh.repos.getCollaborators, {user: org, repo: repo}, localCallback
         );
     }, function(err, collaborators) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
-        } else {
-            mainCallback(err, deduplicateCollaborators(collaborators));
-        }
+        mainCallback(
+            attachReadableErrorMessages(err)
+          , deduplicateCollaborators(collaborators)
+        );
     });
 };
 

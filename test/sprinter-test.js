@@ -13,6 +13,18 @@ var assert = require('chai').assert,
     mockSprinterCollaborators = require('./mock-data/sprinter-collaborators'),
     proxyquire = require('proxyquire');
 
+function assertNoErrors(err) {
+    expect(err).to.be.instanceOf(Object, 'Got ' + typeof(err) + ' instead of Object');
+    expect(err).to.have.length(0);
+}
+
+function assertErrorMessageEquals(err, message) {
+    expect(err).to.be.instanceOf(Object, 'Got ' + typeof(err) + ' instead of Object');
+    expect(err).to.have.length(1);
+    expect(err[0]).to.have.keys(['message', 'code', 'repo']);
+    expect(err[0].message).to.equal(message)
+}
+
 describe('sprinter', function() {
 
     describe('when constructed', function() {
@@ -121,7 +133,7 @@ describe('sprinter', function() {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
             sprinter.getIssues(function(err, issues) {
-                expect(err).to.not.exist;
+                assertNoErrors(err);
                 expect(issues).to.have.length(33, 'Wrong length of returned issues.');
                 done();
             });
@@ -167,7 +179,7 @@ describe('sprinter', function() {
                 it('fetches both open and closed issues', function(done) {
                     var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js']);
                     sprinter.getIssues({state: 'all'}, function(err, issues) {
-                        expect(err).to.not.exist;
+                        assertNoErrors(err);
                         expect(issues[0]).to.have.property('repo');
                         expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
                         // Expecting 3 open, 5 closed
@@ -181,7 +193,7 @@ describe('sprinter', function() {
                 it('fetches both open and closed issues', function(done) {
                     var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js', 'rhyolight/sprinter-dash']);
                     sprinter.getIssues({state: 'all'}, function(err, issues) {
-                        expect(err).to.not.exist;
+                        assertNoErrors(err);
                         expect(issues[0]).to.have.property('repo');
                         expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
                         // Expecting 3 open, 5 closed in sprinter.js and
@@ -197,7 +209,7 @@ describe('sprinter', function() {
         it('attaches a repo to each issue', function(done) {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
             sprinter.getIssues(function(err, issues) {
-                expect(err).to.not.exist;
+                assertNoErrors(err);
                 expect(issues[0]).to.have.property('repo');
                 expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
                 done();
@@ -208,9 +220,7 @@ describe('sprinter', function() {
             var sprinter = new Sprinter('user', 'pass', ['numenta/does not exist']);
 
             sprinter.getIssues(function(err) {
-                expect(err).to.exist;
-                expect(err).to.have.keys(['message', 'code', 'repo']);
-                expect(err.message).to.equal('Unknown repository: "numenta/does not exist"')
+                assertErrorMessageEquals(err, 'Unknown repository: "numenta/does not exist"');
                 done();
             });
         });
@@ -219,9 +229,7 @@ describe('sprinter', function() {
             var sprinter = new Sprinter('user', 'pass', ['numenta/no tracker']);
 
             sprinter.getIssues(function(err) {
-                expect(err).to.exist;
-                expect(err).to.have.keys(['message', 'code', 'repo']);
-                expect(err.message).to.equal('"numenta/no tracker" has no GitHub Issues associated with it.')
+                assertErrorMessageEquals(err, '"numenta/no tracker" has no GitHub Issues associated with it.');
                 done();
             });
         });
@@ -231,7 +239,7 @@ describe('sprinter', function() {
                 var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
                 sprinter.getIssues({repo: 'rhyolight/sprinter.js'}, function(err, issues) {
-                    expect(err).to.not.exist;
+                    assertNoErrors(err);
                     expect(issues).to.have.length(3, 'Wrong length of returned issues.');
                     done();
                 });
@@ -274,8 +282,7 @@ describe('sprinter', function() {
                 title: 'Test Milestone',
                 due_on: 'Apr 16, 2015'
             }, function(err, milestones) {
-                expect(err).to.not.exist;
-                console.log(err);
+                assertNoErrors(err);
                 expect(milestones).to.have.length(2, 'Wrong length of returned milestones.');
                 done();
             });
@@ -314,7 +321,7 @@ describe('sprinter', function() {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
             sprinter.getLabels(function(err, labels) {
-                expect(err).to.not.exist;
+                assertNoErrors(err);
                 expect(labels).to.have.length(mockNupicLabels.length + mockSprinterLabels.length, 'Wrong length of returned labels.');
                 done();
             });
@@ -324,7 +331,7 @@ describe('sprinter', function() {
             var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
             sprinter.getLabels(function(err, labels) {
-                expect(err).to.not.exist;
+                assertNoErrors(err);
                 expect(labels[0]).to.have.property('repo');
                 expect(labels[0].repo).to.equal('numenta/nupic');
                 done();
@@ -366,7 +373,7 @@ describe('sprinter', function() {
             sprinter.getCollaborators(function(err, issues) {
                 // Minus one because "rhyolight" is in both lists and we don't want duplicates.
                 var expectedLength = mockNupicCollaborators.length + mockSprinterCollaborators.length - 1;
-                expect(err).to.not.exist;
+                assertNoErrors(err);
                 expect(issues).to.have.length(expectedLength, 'Wrong length of returned collaborators.');
                 done();
             });

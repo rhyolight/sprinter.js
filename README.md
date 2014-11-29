@@ -74,6 +74,10 @@ Displays usage information.
         Prints all issues. Optionally filters by milestone name, assignee, or state.
     listMilestones
         Prints all milestones.
+    listLabels
+        Prints all labels.
+    listCollaborators
+        Prints all collaborators.
     createMilestones <title> <due_on>
         Creates new milestone in each repo with given title and due date.
         `due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
