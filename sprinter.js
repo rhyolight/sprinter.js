@@ -47,16 +47,16 @@ function attachReadableErrorMessage(err) {
             + err.repo + '".';
     }
     // 404 means unknown repo
-    else if (err.code == 404 && err.repo) {
+    else if (err.code == 404) {
         err.message = 'Unknown repository: "' + err.repo + '"';
     }
     // 410 means repo has no GitHub Issues
-    else if (err.code == 410 && err.repo) {
+    else if (err.code == 410) {
         err.message = '"' + err.repo
             + '" has no GitHub Issues associated with it.';
     }
     // 422 means validation error
-    else if (err.code == 422 && err.repo) {
+    else if (err.code == 422) {
         err.message = 'Validation error on "' + err.repo + '": '
             + JSON.stringify(errorMessage.errors);
     }
