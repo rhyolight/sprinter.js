@@ -1,22 +1,27 @@
 #!/usr/bin/env node
-var fs = require('fs'),
-    _ = require('underscore'),
-    Sprinter = require('../sprinter'),
-    formatter = require('./cli-output-format'),
-    argv = require('minimist')(process.argv.slice(2)),
-    sprinter,
-    availableCommands,
-    command, commandArgs, kwargs,
-    githubUsername, githubPassword,
-    monitoredRepos;
+var fs = require('fs')
+  , _ = require('underscore')
+  , Sprinter = require('../sprinter')
+  , formatter = require('./cli-output-format')
+  , argv = require('minimist')(process.argv.slice(2))
+  , sprinter
+  , availableCommands
+  , command
+  , commandArgs
+  , kwargs
+  , githubUsername
+  , githubPassword
+  , monitoredRepos;
 
 availableCommands = {
-    printRepos: printReposCli,
-    listIssues: getIssuesCli,
-    listMilestones: getMilestonesCli,
-    createMilestones: createMilestonesCli,
-    closeMilestones: closeMilestonesCli,
-    updateMilestones: updateMilestonesCli
+    printRepos: printReposCli
+  , listIssues: getIssuesCli
+  , listMilestones: getMilestonesCli
+  , listLabels: getLabelsCli
+  , listCollaborators: getCollaboratorsCli
+  , createMilestones: createMilestonesCli
+  , closeMilestones: closeMilestonesCli
+  , updateMilestones: updateMilestonesCli
 };
 
 availableCommands.listIssues.help       = ("listIssues [--milestone=\"milestone name\"] "
@@ -25,6 +30,10 @@ availableCommands.listIssues.help       = ("listIssues [--milestone=\"milestone 
     + "Prints all issues. Optionally filters by milestone name, assignee, or state.";
 availableCommands.listMilestones.help   = "listMilestones\n\t".cyan
     + "Prints all milestones.";
+availableCommands.listLabels.help   = "listLabels\n\t".cyan
+    + "Prints all labels.";
+availableCommands.listCollaborators.help   = "listCollaborators\n\t".cyan
+    + "Prints all collaborators.";
 availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t".cyan
     + "Creates new milestone in each repo with given title and due date.\n"
     + "\t`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.";
@@ -58,12 +67,23 @@ function printHelp() {
     console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster'.yellow);
 }
 
-function handleError(message, printUsage) {
+function handleError(message, printUsage, preventExit) {
     console.error(message.red);
     if (printUsage) {
         printHelp();
     }
-    process.exit(-1);
+    if (! preventExit) {
+        process.exit(-1);
+    }
+}
+
+function handleErrors(errors) {
+    console.warn(('\nThe following errors occurred. You might want to check to ensure your repositories\n'
+        + 'all have GitHub Issue trackers enabled and that the repo names are correct:').yellow);
+    console.log(  '===================================================================================');
+    _.each(errors, function(error) {
+        handleError(error.message, false, true);
+    });
 }
 
 function readRepoFile(path) {
@@ -147,9 +167,9 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
         filters.state = kwargs.state;
     }
     commandArgs.push(filters);
-    commandArgs.push(function(err, issues) {
-        if (err) {
-            handleError(err.message);
+    commandArgs.push(function(errors, issues) {
+        if (errors && errors.length) {
+            handleErrors(errors);
         }
         formatter.formatIssues(issues);
     });
@@ -157,33 +177,53 @@ function getIssuesCli(sprinter, command, commandArgs, kwargs) {
 }
 
 function getMilestonesCli(sprinter, command, commandArgs, kwargs) {
-    commandArgs.push(function(err, milestones) {
-        if (err) {
-            handleError(err.message);
+    commandArgs.push(function(errors, milestones) {
+        if (errors && errors.length) {
+            handleErrors(errors);
         }
         formatter.formatMilestones(milestones);
     });
     sprinter.getMilestones.apply(sprinter, commandArgs)
 }
 
+function getLabelsCli(sprinter, command, commandArgs, kwargs) {
+    commandArgs.push(function(errors, milestones) {
+        if (errors && errors.length) {
+            handleErrors(errors);
+        }
+        formatter.formatLabels(milestones);
+    });
+    sprinter.getLabels.apply(sprinter, commandArgs)
+}
+
+function getCollaboratorsCli(sprinter, command, commandArgs, kwargs) {
+    commandArgs.push(function(errors, milestones) {
+        if (errors && errors.length) {
+            handleErrors(errors);
+        }
+        formatter.formatCollaborators(milestones);
+    });
+    sprinter.getCollaborators.apply(sprinter, commandArgs)
+}
+
 function createMilestonesCli(sprinter, command, commandArgs, kwargs) {
     var milestone = {
-        title: commandArgs[0],
-        due_on: commandArgs[1]
+        title: commandArgs[0]
+      , due_on: commandArgs[1]
     };
-    sprinter.createMilestones(milestone, function(err, milestones) {
-        if (err) {
-            return console.error(err);
+    sprinter.createMilestones(milestone, function(errors, milestones) {
+        if (errors && errors.length) {
+            handleErrors(errors);
         }
         console.log(milestones);
     });
 }
 
 function updateMilestonesCli(sprinter, command, commandArgs, kwargs) {
-    var oldTitle = commandArgs[0],
-        milestone = {
-            title: commandArgs[1]
-        };
+    var oldTitle = commandArgs[0]
+      , milestone = {
+          title: commandArgs[1]
+      };
     if (commandArgs.length > 2) {
         milestone.due_on = commandArgs[2];
     }
@@ -208,9 +248,9 @@ processArgs(argv);
 exitIfMissingGitHubCreds();
 
 sprinter = new Sprinter(
-    githubUsername,
-    githubPassword,
-    monitoredRepos
+    githubUsername
+  , githubPassword
+  , monitoredRepos
 );
 
 if (! command) {

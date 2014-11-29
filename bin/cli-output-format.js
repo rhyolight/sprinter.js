@@ -1,5 +1,5 @@
-var _ = require('underscore'),
-    moment = require('moment');
+var _ = require('underscore')
+  , moment = require('moment');
 require('colors');
 
 function shorten(msg, length) {
@@ -55,7 +55,7 @@ function formatIssues(issues) {
 function formatMilestone(milestones, title) {
     // console.log(typeof(milestone));
     // console.log((milestone));
-    console.log(title.bold.blue);
+    console.log('\n' + title.bold.blue);
     _.each(milestones, function(milestone) {
         // console.log(_.keys(milestone));
         console.log('  ' + milestone.repo.yellow
@@ -70,9 +70,30 @@ function formatMilestones(milestones) {
     _.each(milestones, formatMilestone);
 }
 
+function formatLabels(labels) {
+    _.each(_.groupBy(labels, 'repo'), function(repoLabels, repo) {
+        console.log('\n' + repo.bold.blue);
+        console.log(_.map(repoLabels, function(label) {
+            return label.name;
+        }).join(', '));
+    });
+}
+
+function formatCollaborators(collaborators) {
+    _.each(_.groupBy(collaborators, 'repo'), function(repoCollaborators, repo) {
+        console.log('\n' + repo.bold.blue);
+        _.each(repoCollaborators, function(collaborator) {
+            console.log('  ' + collaborator.login.yellow
+                + ' ' + collaborator.html_url.blue);
+        });
+    });
+}
+
 module.exports = {
-    formatIssue: formatIssue,
-    formatIssues: formatIssues,
-    formatMilestone: formatMilestone,
-    formatMilestones: formatMilestones
+    formatIssue: formatIssue
+  , formatIssues: formatIssues
+  , formatMilestone: formatMilestone
+  , formatMilestones: formatMilestones
+  , formatLabels: formatLabels
+  , formatCollaborators: formatCollaborators
 };
