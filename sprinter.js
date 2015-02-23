@@ -1,8 +1,6 @@
 var GitHubApi = require('github')
   , _ = require('underscore')
   , async = require('async')
-  , pageRegex = new RegExp("&page=(\\d*)")
-  , relRegex = new RegExp("rel=\"(.*)\"")
   , originalPrototypeFunctions = {}
   ;
 
