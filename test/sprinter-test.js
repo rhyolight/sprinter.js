@@ -14,8 +14,7 @@ var assert = require('chai').assert,
     proxyquire = require('proxyquire');
 
 function assertNoErrors(err) {
-    expect(err).to.be.instanceOf(Object, 'Got ' + typeof(err) + ' instead of Object');
-    expect(err).to.have.length(0);
+    expect(err).to.be.undefined;
 }
 
 function assertErrorMessageEquals(err, message) {

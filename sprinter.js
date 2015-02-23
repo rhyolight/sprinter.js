@@ -63,9 +63,11 @@ function attachReadableErrorMessage(err) {
 
 
 function attachReadableErrorMessages(errs) {
-    return _.map(errs, function(err) {
-        return attachReadableErrorMessage(err);
-    });
+    if (errs && errs.length) {
+        return _.map(errs, function(err) {
+            return attachReadableErrorMessage(err);
+        });
+    }
 }
 
 /**
@@ -383,6 +385,11 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
             };
         }
         async.parallel(fetchByState, function(err, allIssues) {
+            // If there were no async errors, we'll use undefined instead of an
+            // empty array to represent no errors.
+            if (asyncErrors.length == 0) {
+                asyncErrors = undefined;
+            }
             // If state is 'all', we need to concat the open and closed issues
             // together.
             if (localFilters.state && localFilters.state == 'all') {

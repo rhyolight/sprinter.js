@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.2
+
+* Updating for different async error handling (using undefined instead of empty arrays).
+
 ## 1.1.0
 
 * Added listLabels & listCollaborators to CLI.
