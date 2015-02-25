@@ -143,7 +143,7 @@ function formatIssues(format, issues) {
         formattedIssues = {
             supers: []
           , singletons: []
-          , size: issues.length
+          , all: issues
         };
         partition = _.partition(issues, function(issue) {
             return _.find(issue.labels, function(label) {

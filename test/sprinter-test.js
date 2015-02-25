@@ -262,7 +262,8 @@ describe('sprinter', function() {
                 sprinter.getIssues({format: 'network'}, function(err, issues) {
                     assertNoErrors(err);
                     expect(issues).to.be.instanceOf(Object, 'Got ' + typeof(issues) + ' instead of Object');
-                    expect(issues).to.include.keys('supers', 'singletons', 'size');
+                    expect(issues).to.include.keys('supers', 'singletons', 'all');
+                    expect(issues.all).to.have.length(28, 'Wrong length of returned total issues.');
                     expect(issues.supers).to.have.length(2, 'Wrong length of returned super issues.');
 
                     // Each super issue should have sub issues
@@ -271,7 +272,6 @@ describe('sprinter', function() {
                     });
 
                     expect(issues.singletons).to.have.length(20, 'Wrong length of returned singleton issues.');
-                    expect(issues.size).to.be.equal(28, 'Wrong total length of issue network');
                     done();
                 });
             });

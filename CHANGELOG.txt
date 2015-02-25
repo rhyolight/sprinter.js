@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.4
+
+* Returning list of all issues with network formatted issues instead of size.
+
 ## 1.1.3
 
 * Adding functionality to group subtasks under super tasks when getting issues.
