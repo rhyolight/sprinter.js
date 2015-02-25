@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.3
+
+* Adding functionality to group subtasks under super tasks when getting issues.
+* Switched from underscore to lodash.
+
 ## 1.1.2
 
 * Updating for different async error handling (using undefined instead of empty arrays).

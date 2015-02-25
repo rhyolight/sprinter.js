@@ -1,4 +1,5 @@
-var assert = require('chai').assert,
+var _ = require('lodash')
+  , assert = require('chai').assert,
     expect = require('chai').expect,
     mockNupicIssues = require('./mock-data/nupic-issues'),
     mockSprinterIssues = require('./mock-data/sprinter-issues'),
@@ -11,6 +12,7 @@ var assert = require('chai').assert,
     mockSprinterLabels = require('./mock-data/sprinter-labels'),
     mockNupicCollaborators = require('./mock-data/nupic-collaborators'),
     mockSprinterCollaborators = require('./mock-data/sprinter-collaborators'),
+    mockMixedSuperSubIssues = require('./mock-data/mixed-super-sub-issues'),
     proxyquire = require('proxyquire');
 
 function assertNoErrors(err) {
@@ -20,7 +22,7 @@ function assertNoErrors(err) {
 function assertErrorMessageEquals(err, message) {
     expect(err).to.be.instanceOf(Object, 'Got ' + typeof(err) + ' instead of Object');
     expect(err).to.have.length(1);
-    expect(err[0]).to.have.keys(['message', 'code', 'repo']);
+    expect(err[0]).to.include.keys('message', 'code', 'repo');
     expect(err[0].message).to.equal(message)
 }
 
@@ -87,7 +89,8 @@ describe('sprinter', function() {
     });
 
     describe('when fetching issues', function() {
-        var mockGitHubInstance = {
+        var callbackCount = 0
+          , mockGitHubInstance = {
             authenticate: function() {},
             hasNextPage: function() { return false; },
             issues: {
@@ -107,11 +110,18 @@ describe('sprinter', function() {
                         });
                     }
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                    expect(params).to.have.keys(['user', 'repo', 'state'], 'GitHub params are missing data.');
+                    expect(params).to.include.keys('user', 'repo', 'state');
                     assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                     assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
                     expect(params.state).to.equal('open', 'Default state filter was not "open".');
-                    if (params.user == 'numenta' && params.repo == 'nupic') {
+                    if (params.format && params.format == 'network') {
+                        // Just a hack to return only one copy of the mock issues.
+                        if (callbackCount++ == 0) {
+                            callback(null, []);
+                        } else {
+                            callback(null, mockMixedSuperSubIssues);
+                        }
+                    } else if (params.user == 'numenta' && params.repo == 'nupic') {
                         callback(null, mockNupicIssues);
                     } else if (params.user == 'rhyolight' && params.repo == 'sprinter.js') {
                         callback(null, mockSprinterIssues);
@@ -145,7 +155,7 @@ describe('sprinter', function() {
                 issues: {
                     repoIssues: function(params, callback) {
                         expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                        expect(params).to.have.keys(['user', 'repo', 'state'], 'GitHub params are missing data.');
+                        expect(params).to.include.keys('user', 'repo', 'state');
                         assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                         if (params.repo == 'sprinter.js') {
                             if (params.state == 'open') {
@@ -245,6 +255,28 @@ describe('sprinter', function() {
             });
         });
 
+        describe('and "network" issue format is specified', function() {
+            it('issues are grouped into super tasks with subtasks and singletons', function(done) {
+                var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+                sprinter.getIssues({format: 'network'}, function(err, issues) {
+                    assertNoErrors(err);
+                    expect(issues).to.be.instanceOf(Object, 'Got ' + typeof(issues) + ' instead of Object');
+                    expect(issues).to.include.keys('supers', 'singletons', 'size');
+                    expect(issues.supers).to.have.length(2, 'Wrong length of returned super issues.');
+
+                    // Each super issue should have sub issues
+                    _.each(issues.supers, function(superIssue) {
+                        expect(superIssue).to.include.keys('subtasks');
+                    });
+
+                    expect(issues.singletons).to.have.length(20, 'Wrong length of returned singleton issues.');
+                    expect(issues.size).to.be.equal(28, 'Wrong total length of issue network');
+                    done();
+                });
+            });
+        });
+
     });
 
     describe('when creating milestones', function() {
@@ -253,7 +285,7 @@ describe('sprinter', function() {
                 issues: {
                     createMilestone: function(params, callback) {
                         expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                        expect(params).to.have.keys(['user', 'repo', 'title', 'due_on'], 'GitHub params are missing data.');
+                        expect(params).to.have.keys('user', 'repo', 'title', 'due_on');
                         assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                         expect(params.repo).to.equal('experiments');
                         expect(params.title).to.equal('Test Milestone');
@@ -296,7 +328,7 @@ describe('sprinter', function() {
             issues: {
                 getLabels: function(params, callback) {
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                    expect(params).to.have.keys(['user', 'repo'], 'GitHub params are missing data.');
+                    expect(params).to.include.keys('user', 'repo');
                     assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                     assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
                     if (params.user == 'numenta' && params.repo == 'nupic') {
@@ -346,7 +378,7 @@ describe('sprinter', function() {
             repos: {
                 getCollaborators: function(params, callback) {
                     expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                    expect(params).to.have.keys(['user', 'repo'], 'GitHub params are missing data.');
+                    expect(params).to.include.keys('user', 'repo');
                     assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
                     assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
                     if (params.user == 'numenta' && params.repo == 'nupic') {
