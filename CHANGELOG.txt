@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.5
+
+* bugfix change underscore to lodash.
+
 ## 1.1.4
 
 * Returning list of all issues with network formatted issues instead of size.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var fs = require('fs')
-  , _ = require('underscore')
+  , _ = require('lodash')
   , Sprinter = require('../sprinter')
   , formatter = require('./cli-output-format')
   , argv = require('minimist')(process.argv.slice(2))
