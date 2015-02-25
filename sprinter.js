@@ -1,7 +1,9 @@
 var GitHubApi = require('github')
-  , _ = require('underscore')
+  , _ = require('lodash')
   , async = require('async')
   , originalPrototypeFunctions = {}
+  , markdownTasksRegex = /^((\-|\*) \[.\].*)$/gm
+  , subtaskRegex = /(https?\:\/\/(www\.)?.*\/issues\/|\#)(\d+)/
   ;
 
 /**
@@ -19,9 +21,24 @@ function convertSlugsToObjects(slugs) {
  * Sorts array of issue objects by last updated date.
  */
 function sortIssues(issues) {
-    return _.sortBy(issues, function(issue) {
-        return new Date(issue.updated_at);
-    }).reverse();
+    var sorted;
+    // Issues might be pre-arranged by super/sub tasks.
+    if (Object.keys(issues).indexOf('supers') > -1) {
+        // Network format issue sort
+        issues.supers = _.sortBy(issues.supers, function(issue) {
+            return new Date(issue.updated_at);
+        }).reverse();
+
+        issues.singletons = _.sortBy(issues.singletons, function(issue) {
+            return new Date(issue.updated_at);
+        }).reverse();
+        sorted = issues;
+    } else {
+        sorted = _.sortBy(issues, function(issue) {
+            return new Date(issue.updated_at);
+        }).reverse();
+    }
+    return sorted;
 }
 
 function attachReadableErrorMessage(err) {
@@ -71,20 +88,6 @@ function attachReadableErrorMessages(errs) {
 }
 
 /**
- * Simple utility for creating a range array.
- * @param start
- * @param end
- * @returns {Array}
- */
-function range(start, end) {
-    var out = [];
-    for (var i = start; i <= end; i++) {
-        out.push(i);
-    }
-    return out;
-}
-
-/**
  * Removes duplicate collaborators.
  * @param collaborators
  * @returns {Array}
@@ -101,6 +104,74 @@ function deduplicateCollaborators(collaborators) {
         }
         return ! duplicate;
     });
+}
+
+/**
+ * Using regex, finds subtasks within a super issue's body string and returns
+ * them in an array of issue numbers. 
+ * @param superIssue
+ * @returns {Array}
+ */
+function extractSuperIssueSubTaskNumbers(superIssue) {
+    var matches = superIssue.body.match(markdownTasksRegex)
+      , subTaskIds = [];
+    _.each(matches, function(line) {
+        var match = line.match(subtaskRegex);
+        if (match) {
+            subTaskIds.push(parseInt(match[3]));
+        }
+    });
+    return subTaskIds;
+}
+
+/**
+ * Takes an array of issue objects and presents them differently depending on
+ * 'format'. The only valid option now is "network", which groups super issue
+ * subtasks into a "subtasks" array on the super issue object.
+ * @param format {string} 'network' or null
+ * @param issues {array}
+ * @returns {object} with 'supers' array, 'singletons' array and 'size' for
+ *                   total number of issues in all.
+ */
+function formatIssues(format, issues) {
+    var formattedIssues
+      , partition
+      , superIssues
+      , singletonIssues
+      , removedSubtasks = [];
+    if (format == 'network') {
+        formattedIssues = {
+            supers: []
+          , singletons: []
+          , size: issues.length
+        };
+        partition = _.partition(issues, function(issue) {
+            return _.find(issue.labels, function(label) {
+                return label.name == 'super';
+            });
+        });
+        superIssues = partition.shift();
+        singletonIssues = partition.shift();
+        _.each(superIssues, function(superIssue) {
+            var subTaskNumbers = extractSuperIssueSubTaskNumbers(superIssue);
+            superIssue.subtasks = _.filter(singletonIssues, function(issue) {
+                var isSubtask = _.contains(subTaskNumbers, issue.number);
+                if (isSubtask) {
+                    removedSubtasks.push(issue.number);
+                }
+                return isSubtask;
+            });
+        });
+        formattedIssues.supers = superIssues;
+        _.each(singletonIssues, function(issue) {
+            if (! _.contains(removedSubtasks, issue.number)) {
+                formattedIssues.singletons.push(issue);
+            }
+        });
+    } else {
+        formattedIssues = issues;
+    }
+    return formattedIssues;
 }
 
 /**
@@ -393,12 +464,11 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
             // If state is 'all', we need to concat the open and closed issues
             // together.
             if (localFilters.state && localFilters.state == 'all') {
-                localCallback(
-                    asyncErrors, allIssues.open.concat(allIssues.closed)
-                );
+                allIssues = allIssues.open.concat(allIssues.closed);
             } else {
-                localCallback(asyncErrors, allIssues[localFilters.state]);
+                allIssues = allIssues[localFilters.state];
             }
+            localCallback(asyncErrors, allIssues)
         });
     };
 
@@ -408,6 +478,11 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
                 if (issue.milestone == null) { return false; }
                 return issue.milestone.title == milestone;
             });
+        } else {
+            // If user specified a result format, apply it.
+            if (userFilters.format) {
+                result = formatIssues(userFilters.format, result);
+            }
         }
         mainCallback(errors, sortIssues(result));
     };
@@ -426,7 +501,14 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
 /**
  * Returns all issues across all monitored repos. Optional filters can be
  * provided to filter results.
- * @param [userFilters] {object} Filter, like {state: 'closed'}.
+ * @param [userFilters] {object} Filter, like {state: 'closed'}. This can also
+ *                               contain a 'format' value to specify how the
+ *                               issues should be presented. The only valid
+ *                               option at this point is 'network', which will
+ *                               break out "super" issues and "singleton" issues
+ *                               and attaching super issue subtasks as
+ *                               "subtasks" on the super issue object.
+ *                               (A bit of an unadvertised feature of sprinter.)
  * @param mainCallback {function} Called with err, issues when done. Issues are
  *                                sorted by updated_at.
  */

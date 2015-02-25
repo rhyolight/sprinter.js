@@ -1,6 +1,6 @@
 {
     "name": "sprinter",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "author": {
         "name" : "Matthew Taylor",
         "email" : "rhyolight@gmail.com",
@@ -30,7 +30,7 @@
         "colors"     : "0.6.2",
         "moment"     : "2.5.1",
         "minimist"   : "0.0.8",
-        "underscore" : "1.6.0",
+        "lodash"     : "3.3.1",
         "async"      : "0.9.0",
         "github"     : "0.1.15",
         "js-yaml"    : "3.0.2"
@@ -40,7 +40,7 @@
         "mocha"         : "1.12.x",
         "istanbul"      : "0.1.x",
         "sinon"         : "1.7.x",
-        "chai"          : "1.9.x",
+        "chai"          : "2.1.0",
         "coveralls"     : "2.10.0"
     },
     "license": "MIT",
