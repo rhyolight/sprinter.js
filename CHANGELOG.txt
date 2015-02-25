@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.1.6
+
+* Fixed bug preventing issues from returning when milestone filter set.
+
 ## 1.1.5
 
 * bugfix change underscore to lodash.

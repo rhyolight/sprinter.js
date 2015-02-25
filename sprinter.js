@@ -404,7 +404,6 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
         milestone = filters.milestone;
         delete filters.milestone;
     }
-
     fetcher = function(org, repo, localCallback) {
         var fetchByState = {}
           , asyncErrors = []
@@ -478,11 +477,10 @@ Sprinter.prototype._getIssueOrPr = function(type, userFilters, mainCallback) {
                 if (issue.milestone == null) { return false; }
                 return issue.milestone.title == milestone;
             });
-        } else {
-            // If user specified a result format, apply it.
-            if (userFilters.format) {
-                result = formatIssues(userFilters.format, result);
-            }
+        }
+        // If user specified a result format, apply it.
+        if (userFilters.format) {
+            result = formatIssues(userFilters.format, result);
         }
         mainCallback(errors, sortIssues(result));
     };
