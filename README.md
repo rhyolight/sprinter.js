@@ -1,4 +1,4 @@
-# Sprinter [![Build Status](https://travis-ci.org/rhyolight/sprinter.js.svg?branch=master)](https://travis-ci.org/rhyolight/sprinter.js) [![Coverage Status](https://coveralls.io/repos/rhyolight/sprinter.js/badge.png?branch=master)](https://coveralls.io/r/rhyolight/sprinter.js?branch=master) [![NPM version](https://badge.fury.io/js/sprinter.svg)](http://badge.fury.io/js/sprinter)
+# Sprinter [![Build Status](https://travis-ci.org/rhyolight/sprinter.js.svg?branch=master)](https://travis-ci.org/rhyolight/sprinter.js) [![Coverage Status](https://coveralls.io/repos/rhyolight/sprinter.js/badge.png?branch=master)](https://coveralls.io/r/rhyolight/sprinter.js?branch=master)
 
 [![NPM](https://nodei.co/npm/sprinter.png?downloads=true&downloadRank=true&stars=true)](https://nodei.co/npm/sprinter/)
 
