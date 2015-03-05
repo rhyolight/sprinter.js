@@ -34,8 +34,8 @@ availableCommands.listLabels.help   = "listLabels\n\t".cyan
     + "Prints all labels.";
 availableCommands.listCollaborators.help   = "listCollaborators\n\t".cyan
     + "Prints all collaborators.";
-availableCommands.createMilestones.help = "createMilestones <title> <due_on>\n\t".cyan
-    + "Creates new milestone in each repo with given title and due date.\n"
+availableCommands.createMilestones.help = "createMilestones <title> <description> <due_on>\n\t".cyan
+    + "Creates new milestone in each repo with given title, description, and due date.\n"
     + "\t`due_on` should be a JS-formattable date string like 'Apr 16, 2014'.";
 availableCommands.closeMilestones.help  = "closeMilestones <title>\n\t".cyan
     + "Closes all milestones matching title across all repos.";
@@ -64,7 +64,7 @@ function printHelp() {
         console.log(fn.help);
     });
     console.log('\nEXAMPLE'.underline);
-    console.log('sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster'.yellow);
+    console.log('sprinter createMilestones "1.0.1" "Bug Bash Release" "April 16, 2015" --repos=rhyolight/highlinker,rhyolight/chesster'.yellow);
 }
 
 function handleError(message, printUsage, preventExit) {
@@ -209,7 +209,8 @@ function getCollaboratorsCli(sprinter, command, commandArgs, kwargs) {
 function createMilestonesCli(sprinter, command, commandArgs, kwargs) {
     var milestone = {
         title: commandArgs[0]
-      , due_on: commandArgs[1]
+      , description: commandArgs[1]
+      , due_on: commandArgs[2]
     };
     sprinter.createMilestones(milestone, function(errors, milestones) {
         if (errors && errors.length) {

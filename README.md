@@ -62,7 +62,7 @@ Displays usage information.
         sprinter <command> <cmd-options> --repos=org/repo,org2/repo2
      or
         sprinter <command> <cmd-options> --repos=./path/to/repo/file
-
+    
     The repo file should have one repo slug on each line. Instead of providing a --repos option, you could
     set the $SPRINTER_REPOS environment variable instead.
 
@@ -78,8 +78,8 @@ Displays usage information.
         Prints all labels.
     listCollaborators
         Prints all collaborators.
-    createMilestones <title> <due_on>
-        Creates new milestone in each repo with given title and due date.
+    createMilestones <title> <description> <due_on>
+        Creates new milestone in each repo with given title, description, and due date.
         `due_on` should be a JS-formattable date string like 'Apr 16, 2014'.
     closeMilestones <title>
         Closes all milestones matching title across all repos.
@@ -87,7 +87,7 @@ Displays usage information.
         Updates all milestones matching title across all repos.
 
     EXAMPLE
-    sprinter createMilestones "Sprint 43" "April 16, 2014" --repos=rhyolight/highlinker,rhyolight/chesster
+    sprinter createMilestones "1.0.1" "Bug Bash Release" "April 16, 2015" --repos=rhyolight/highlinker,rhyolight/chesster
 
 > **WARNING:** The CLI is not complete. There are some functions within the library that are not exposed as CLI functions.
 

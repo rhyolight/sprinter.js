@@ -4,6 +4,10 @@
 
 * Fixed missing page bug.
 
+## 1.2.0
+
+* Minor breaking change in CLI tool. Added 'description' to createMilestones.
+
 ## 1.1.6
 
 * Fixed bug preventing issues from returning when milestone filter set.
