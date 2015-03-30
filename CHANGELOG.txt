@@ -1,12 +1,16 @@
 # Changelog
 
-## 1.1.7
+## 1.2.1
 
-* Fixed missing page bug.
+* Fixed bug with create label error handling.
 
 ## 1.2.0
 
 * Minor breaking change in CLI tool. Added 'description' to createMilestones.
+
+## 1.1.7
+
+* Fixed missing page bug.
 
 ## 1.1.6
 

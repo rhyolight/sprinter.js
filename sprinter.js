@@ -698,11 +698,11 @@ Sprinter.prototype.createLabels = function(labels, mainCallback) {
             };
         });
         async.parallel(createFunctions, localCallback);
-    }, function(err, response) {
-        if (err) {
-            mainCallback(attachReadableErrorMessage(err));
+    }, function(errs, response) {
+        if (errs) {
+            mainCallback(attachReadableErrorMessages(errs));
         } else {
-            mainCallback(err, response);
+            mainCallback(errs, response);
         }
     });
 };
