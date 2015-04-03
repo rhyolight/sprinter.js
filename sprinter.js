@@ -175,6 +175,27 @@ function formatIssues(format, issues) {
 }
 
 /**
+ * Given a list of issues and pull requests, populate the additional properties
+ * that exist within any issues into the PR objects so they contain as much info
+ * as possible.
+ * @param issues {Object[]}
+ * @param prs {Object[]}
+ */
+function mergeIssuesAndPrs(issues, prs) {
+    _.each(issues, function(issue) {
+        var targetPr
+          , targetPrIndex = _.findIndex(prs, function(pr) {
+              return pr && pr.number == issue.number;
+          });
+        if (targetPrIndex > -1) {
+            targetPr = prs[targetPrIndex];
+            prs[targetPrIndex] = _.merge(targetPr, issue);
+        }
+    });
+    return prs;
+}
+
+/**
  * Wrapper class around the GitHub API client, providing some authentication
  * convenience and additional utility functions for executing operations across
  * the issue trackers of several repositories at once.
@@ -519,12 +540,46 @@ Sprinter.prototype.getIssues = function(userFilters, mainCallback) {
 /**
  * Returns all prs across all monitored repos. Optional filters can be provided
  * to filter results, but they are more limited than getting issues.
- * @param [userFilters] {object} Filter, like {state: 'closed'}.
+ * @param [userFilters] {object} Filter, like {state: 'closed'}. One additional
+ *                               property you can use to get the most data as
+ *                               possible for each PR is 'mergeIssueProperties'.
+ *                               When given, this will also get all issues and
+ *                               merge them into the PR objects to provide the
+ *                               most data as possible.
  * @param mainCallback {function} Called with err, prs when done. PRs are
  *                                sorted by updated_at.
  */
 Sprinter.prototype.getPullRequests = function(userFilters, mainCallback) {
-    this._getIssueOrPr('pr', userFilters, mainCallback);
+    var me = this
+      , fetchers = {};
+    if (typeof(userFilters) == 'function' && mainCallback == undefined) {
+        mainCallback = userFilters;
+        userFilters = {};
+    }
+    fetchers.prs = function(localCallback) {
+        me._getIssueOrPr('pr', userFilters, localCallback);
+    };
+    // If we need to get issues as well, we add another fetcher function.
+    if (userFilters.mergeIssueProperties) {
+        fetchers.issues = function(localCallback) {
+            me._getIssueOrPr('issue', userFilters, localCallback);
+        };
+    }
+    // Call fetchers simultaneously.
+    async.parallel(fetchers, function(err, result) {
+        if (err) {
+            return mainCallback(attachReadableErrorMessages(err));
+        }
+        if (! result.issues) {
+            // If there are no issues to merge into the PRs, we just return the
+            // PRs.
+            mainCallback(err, result.prs);
+        } else {
+            // If both PRs and issues were fetched, we need to merge issue
+            // properties into the PRs.
+            mainCallback(err, mergeIssuesAndPrs(result.issues, result.prs));
+        }
+    });
 };
 
 /**
