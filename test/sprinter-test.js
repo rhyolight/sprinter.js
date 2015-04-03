@@ -3,6 +3,8 @@ var _ = require('lodash')
     expect = require('chai').expect,
     mockNupicIssues = require('./mock-data/nupic-issues'),
     mockSprinterIssues = require('./mock-data/sprinter-issues'),
+    mockSprinterPrs = require('./mock-data/sprinter-prs'),
+    mockSprinterPrIssues = require('./mock-data/sprinter-pr-issues'),
     mockSprinterClosedIssues = require('./mock-data/sprinter-closed-issues'),
     mockSprinterDashIssues = require('./mock-data/sprinter-dash-issues'),
     mockSprinterDashClosedIssues = require('./mock-data/sprinter-dash-closed-issues'),
@@ -88,192 +90,242 @@ describe('sprinter', function() {
 
     });
 
-    describe('when fetching issues', function() {
-        var callbackCount = 0
-          , mockGitHubInstance = {
-            authenticate: function() {},
-            hasNextPage: function() { return false; },
-            issues: {
-                repoIssues: function(params, callback) {
-                    // Error case when repo does not exist
-                    if (params.repo == 'does not exist') {
-                        return callback({
-                            message: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3"}',
-                            code: 404
-                        });
-                    }
-                    // Error case when repo has no issue tracker
-                    else if (params.repo == 'no tracker') {
-                        return callback({
-                            message: '{"message":"Issues are disabled for this repo","documentation_url":"https://developer.github.com/v3/issues/"}',
-                            code: 410
-                        });
-                    }
-                    expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                    expect(params).to.include.keys('user', 'repo', 'state');
-                    assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
-                    assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
-                    expect(params.state).to.equal('open', 'Default state filter was not "open".');
-                    if (params.format && params.format == 'network') {
-                        // Just a hack to return only one copy of the mock issues.
-                        if (callbackCount++ == 0) {
-                            callback(null, []);
-                        } else {
-                            callback(null, mockMixedSuperSubIssues);
-                        }
-                    } else if (params.user == 'numenta' && params.repo == 'nupic') {
-                        callback(null, mockNupicIssues);
-                    } else if (params.user == 'rhyolight' && params.repo == 'sprinter.js') {
-                        callback(null, mockSprinterIssues);
-                    } else {
-                        assert.fail('Unknown repo "' + params.user + '/' + params.repo + '".');
-                    }
-                }
-            }
-        };
+    describe('when fetching issues or pull requests', function() {
 
-        var Sprinter = proxyquire('../sprinter', {
-            'github': function () {
-                return mockGitHubInstance;
-            }
-        });
-
-        it('fetches issues from all repos', function(done) {
-            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
-
-            sprinter.getIssues(function(err, issues) {
-                assertNoErrors(err);
-                expect(issues).to.have.length(33, 'Wrong length of returned issues.');
-                done();
-            });
-        });
-
-        describe('when issue state is "all"', function() {
-            var mockGitHubInstance = {
-                authenticate: function() {},
-                hasNextPage: function() { return false; },
-                issues: {
-                    repoIssues: function(params, callback) {
-                        expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
-                        expect(params).to.include.keys('user', 'repo', 'state');
-                        assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
-                        if (params.repo == 'sprinter.js') {
-                            if (params.state == 'open') {
-                                callback(null, mockSprinterIssues)
-                            } else if (params.state == 'closed') {
-                                callback(null, mockSprinterClosedIssues);
-                            } else {
-                                assert.fail('Unknown issue state "' + params.state + '"');
+        describe('when fetching issues', function() {
+            var callbackCount = 0
+              , mockGitHubInstance = {
+                    authenticate: function() {},
+                    hasNextPage: function() { return false; },
+                    issues: {
+                        repoIssues: function(params, callback) {
+                            // Error case when repo does not exist
+                            if (params.repo == 'does not exist') {
+                                return callback({
+                                    message: '{"message":"Not Found","documentation_url":"https://developer.github.com/v3"}',
+                                    code: 404
+                                });
                             }
-                        } else if (params.repo == 'sprinter-dash') {
-                            if (params.state == 'open') {
-                                callback(null, mockSprinterDashIssues)
-                            } else if (params.state == 'closed') {
-                                callback(null, mockSprinterDashClosedIssues);
-                            } else {
-                                assert.fail('Unknown issue state "' + params.state + '"');
+                            // Error case when repo has no issue tracker
+                            else if (params.repo == 'no tracker') {
+                                return callback({
+                                    message: '{"message":"Issues are disabled for this repo","documentation_url":"https://developer.github.com/v3/issues/"}',
+                                    code: 410
+                                });
                             }
-                        } else {
-                            assert.fail('Unknown repo "' + params.repo + '"');
+                            expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
+                            expect(params).to.include.keys('user', 'repo', 'state');
+                            assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                            assert.includeMembers(['nupic', 'sprinter.js'], [params.repo], 'Repo name should be either nupic or sprinter.js.');
+                            expect(params.state).to.equal('open', 'Default state filter was not "open".');
+                            if (params.format && params.format == 'network') {
+                                // Just a hack to return only one copy of the mock issues.
+                                if (callbackCount++ == 0) {
+                                    callback(null, []);
+                                } else {
+                                    callback(null, mockMixedSuperSubIssues);
+                                }
+                            } else if (params.user == 'numenta' && params.repo == 'nupic') {
+                                callback(null, mockNupicIssues);
+                            } else if (params.user == 'rhyolight' && params.repo == 'sprinter.js') {
+                                callback(null, mockSprinterIssues);
+                            } else {
+                                assert.fail('Unknown repo "' + params.user + '/' + params.repo + '".');
+                            }
                         }
                     }
-                }
-            };
+                };
+
             var Sprinter = proxyquire('../sprinter', {
                 'github': function () {
                     return mockGitHubInstance;
                 }
             });
-            describe('and only one repo', function() {
-                it('fetches both open and closed issues', function(done) {
-                    var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js']);
-                    sprinter.getIssues({state: 'all'}, function(err, issues) {
-                        assertNoErrors(err);
-                        expect(issues[0]).to.have.property('repo');
-                        expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
-                        // Expecting 3 open, 5 closed
-                        expect(issues).to.have.length(8, 'Wrong length of returned issues.');
-                        done();
-                    });
 
-                });
-            });
-            describe('for many repos', function() {
-                it('fetches both open and closed issues', function(done) {
-                    var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js', 'rhyolight/sprinter-dash']);
-                    sprinter.getIssues({state: 'all'}, function(err, issues) {
-                        assertNoErrors(err);
-                        expect(issues[0]).to.have.property('repo');
-                        expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
-                        // Expecting 3 open, 5 closed in sprinter.js and
-                        // 5 open, 1 closed from sprinter-dash, totalling 14 total
-                        expect(issues).to.have.length(14, 'Wrong length of returned issues.');
-                        done();
-                    });
-
-                });
-            });
-        });
-
-        it('attaches a repo to each issue', function(done) {
-            var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
-            sprinter.getIssues(function(err, issues) {
-                assertNoErrors(err);
-                expect(issues[0]).to.have.property('repo');
-                expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
-                done();
-            });
-        });
-
-        it('handles errors when repo does not exist', function(done) {
-            var sprinter = new Sprinter('user', 'pass', ['numenta/does not exist']);
-
-            sprinter.getIssues(function(err) {
-                assertErrorMessageEquals(err, 'Unknown repository: "numenta/does not exist"');
-                done();
-            });
-        });
-
-        it('handles errors when repo has no issue tracker', function(done) {
-            var sprinter = new Sprinter('user', 'pass', ['numenta/no tracker']);
-
-            sprinter.getIssues(function(err) {
-                assertErrorMessageEquals(err, '"numenta/no tracker" has no GitHub Issues associated with it.');
-                done();
-            });
-        });
-
-        describe('when a repo parameter is specified', function() {
-            it('only queries one issue tracker', function(done) {
+            it('fetches issues from all repos', function(done) {
                 var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
 
-                sprinter.getIssues({repo: 'rhyolight/sprinter.js'}, function(err, issues) {
+                sprinter.getIssues(function(err, issues) {
                     assertNoErrors(err);
-                    expect(issues).to.have.length(3, 'Wrong length of returned issues.');
+                    expect(issues).to.have.length(33, 'Wrong length of returned issues.');
                     done();
                 });
             });
-        });
 
-        describe('and "network" issue format is specified', function() {
-            it('issues are grouped into super tasks with subtasks and singletons', function(done) {
-                var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+            describe('when issue state is "all"', function() {
+                var mockGitHubInstance = {
+                    authenticate: function() {},
+                    hasNextPage: function() { return false; },
+                    issues: {
+                        repoIssues: function(params, callback) {
+                            expect(params).to.be.instanceOf(Object, 'GitHub client given no parameters.');
+                            expect(params).to.include.keys('user', 'repo', 'state');
+                            assert.includeMembers(['numenta', 'rhyolight'], [params.user], 'Repo user should be either numenta or rhyolight.');
+                            if (params.repo == 'sprinter.js') {
+                                if (params.state == 'open') {
+                                    callback(null, mockSprinterIssues)
+                                } else if (params.state == 'closed') {
+                                    callback(null, mockSprinterClosedIssues);
+                                } else {
+                                    assert.fail('Unknown issue state "' + params.state + '"');
+                                }
+                            } else if (params.repo == 'sprinter-dash') {
+                                if (params.state == 'open') {
+                                    callback(null, mockSprinterDashIssues)
+                                } else if (params.state == 'closed') {
+                                    callback(null, mockSprinterDashClosedIssues);
+                                } else {
+                                    assert.fail('Unknown issue state "' + params.state + '"');
+                                }
+                            } else {
+                                assert.fail('Unknown repo "' + params.repo + '"');
+                            }
+                        }
+                    }
+                };
+                var Sprinter = proxyquire('../sprinter', {
+                    'github': function () {
+                        return mockGitHubInstance;
+                    }
+                });
+                describe('and only one repo', function() {
+                    it('fetches both open and closed issues', function(done) {
+                        var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js']);
+                        sprinter.getIssues({state: 'all'}, function(err, issues) {
+                            assertNoErrors(err);
+                            expect(issues[0]).to.have.property('repo');
+                            expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
+                            // Expecting 3 open, 5 closed
+                            expect(issues).to.have.length(8, 'Wrong length of returned issues.');
+                            done();
+                        });
 
-                sprinter.getIssues({format: 'network'}, function(err, issues) {
-                    assertNoErrors(err);
-                    expect(issues).to.be.instanceOf(Object, 'Got ' + typeof(issues) + ' instead of Object');
-                    expect(issues).to.include.keys('supers', 'singletons', 'all');
-                    expect(issues.all).to.have.length(28, 'Wrong length of returned total issues.');
-                    expect(issues.supers).to.have.length(2, 'Wrong length of returned super issues.');
-
-                    // Each super issue should have sub issues
-                    _.each(issues.supers, function(superIssue) {
-                        expect(superIssue).to.include.keys('subtasks');
                     });
+                });
+                describe('for many repos', function() {
+                    it('fetches both open and closed issues', function(done) {
+                        var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js', 'rhyolight/sprinter-dash']);
+                        sprinter.getIssues({state: 'all'}, function(err, issues) {
+                            assertNoErrors(err);
+                            expect(issues[0]).to.have.property('repo');
+                            expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
+                            // Expecting 3 open, 5 closed in sprinter.js and
+                            // 5 open, 1 closed from sprinter-dash, totalling 14 total
+                            expect(issues).to.have.length(14, 'Wrong length of returned issues.');
+                            done();
+                        });
 
-                    expect(issues.singletons).to.have.length(20, 'Wrong length of returned singleton issues.');
+                    });
+                });
+            });
+
+            it('attaches a repo to each issue', function(done) {
+                var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+                sprinter.getIssues(function(err, issues) {
+                    assertNoErrors(err);
+                    expect(issues[0]).to.have.property('repo');
+                    expect(issues[0].repo).to.equal('rhyolight/sprinter.js');
                     done();
                 });
+            });
+
+            it('handles errors when repo does not exist', function(done) {
+                var sprinter = new Sprinter('user', 'pass', ['numenta/does not exist']);
+
+                sprinter.getIssues(function(err) {
+                    assertErrorMessageEquals(err, 'Unknown repository: "numenta/does not exist"');
+                    done();
+                });
+            });
+
+            it('handles errors when repo has no issue tracker', function(done) {
+                var sprinter = new Sprinter('user', 'pass', ['numenta/no tracker']);
+
+                sprinter.getIssues(function(err) {
+                    assertErrorMessageEquals(err, '"numenta/no tracker" has no GitHub Issues associated with it.');
+                    done();
+                });
+            });
+
+            describe('when a repo parameter is specified', function() {
+                it('only queries one issue tracker', function(done) {
+                    var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+                    sprinter.getIssues({repo: 'rhyolight/sprinter.js'}, function(err, issues) {
+                        assertNoErrors(err);
+                        expect(issues).to.have.length(3, 'Wrong length of returned issues.');
+                        done();
+                    });
+                });
+            });
+
+            describe('and "network" issue format is specified', function() {
+                it('issues are grouped into super tasks with subtasks and singletons', function(done) {
+                    var sprinter = new Sprinter('user', 'pass', ['numenta/nupic','rhyolight/sprinter.js']);
+
+                    sprinter.getIssues({format: 'network'}, function(err, issues) {
+                        assertNoErrors(err);
+                        expect(issues).to.be.instanceOf(Object, 'Got ' + typeof(issues) + ' instead of Object');
+                        expect(issues).to.include.keys('supers', 'singletons', 'all');
+                        expect(issues.all).to.have.length(28, 'Wrong length of returned total issues.');
+                        expect(issues.supers).to.have.length(2, 'Wrong length of returned super issues.');
+
+                        // Each super issue should have sub issues
+                        _.each(issues.supers, function(superIssue) {
+                            expect(superIssue).to.include.keys('subtasks');
+                        });
+
+                        expect(issues.singletons).to.have.length(20, 'Wrong length of returned singleton issues.');
+                        done();
+                    });
+                });
+            });
+
+        });
+
+        describe('when fetching pull requests', function() {
+            var mockGitHubInstance = {
+                authenticate: function () {
+                },
+                hasNextPage: function () {
+                    return false;
+                },
+                issues: {
+                    repoIssues: function(params, callback) {
+                        callback(null, mockSprinterPrIssues);
+                    }
+                },
+                pullRequests: {
+                    getAll: function(params, callback) {
+                        callback(null, mockSprinterPrs)
+                    }
+                }
+            };
+
+            var Sprinter = proxyquire('../sprinter', {
+                'github': function () {
+                    return mockGitHubInstance;
+                }
+            });
+
+            var sprinter = new Sprinter('user', 'pass', ['rhyolight/sprinter.js']);
+
+            describe('and mergeIssuesIntoPrs is specified', function() {
+                it('merges issue details into PR objects', function(done) {
+
+                    sprinter.getPullRequests({
+                        mergeIssueProperties: true
+                    }, function(err, prs) {
+                        assertNoErrors(err);
+                        //console.log(prs);
+                        expect(prs).to.have.length(1, 'Wrong length of returned PRs.');
+                        expect(prs[0]).to.have.property('labels');
+                        done();
+                    });
+
+
+                });
+
             });
         });
 
