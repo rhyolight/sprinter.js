@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 var fs = require('fs')
   , _ = require('lodash')
-  , Sprinter = require('../sprinter')
+  , Sprinter = require('../lib/sprinter')
   , formatter = require('./cli-output-format')
   , argv = require('minimist')(process.argv.slice(2))
   , sprinter

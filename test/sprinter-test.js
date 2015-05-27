@@ -41,7 +41,7 @@ describe('sprinter', function() {
             }
         };
 
-        var Sprinter = proxyquire('../sprinter', {
+        var Sprinter = proxyquire('../lib/sprinter', {
             'github': function () {
                 return mockGitHubInstance;
             }
@@ -136,7 +136,7 @@ describe('sprinter', function() {
                     }
                 };
 
-            var Sprinter = proxyquire('../sprinter', {
+            var Sprinter = proxyquire('../lib/sprinter', {
                 'github': function () {
                     return mockGitHubInstance;
                 }
@@ -183,7 +183,7 @@ describe('sprinter', function() {
                         }
                     }
                 };
-                var Sprinter = proxyquire('../sprinter', {
+                var Sprinter = proxyquire('../lib/sprinter', {
                     'github': function () {
                         return mockGitHubInstance;
                     }
@@ -302,7 +302,7 @@ describe('sprinter', function() {
                 }
             };
 
-            var Sprinter = proxyquire('../sprinter', {
+            var Sprinter = proxyquire('../lib/sprinter', {
                 'github': function () {
                     return mockGitHubInstance;
                 }
@@ -353,7 +353,7 @@ describe('sprinter', function() {
                 }
         };
 
-        var Sprinter = proxyquire('../sprinter', {
+        var Sprinter = proxyquire('../lib/sprinter', {
             'github': function () {
                 return mockGitHubInstance;
             }
@@ -394,7 +394,7 @@ describe('sprinter', function() {
             }
         };
 
-        var Sprinter = proxyquire('../sprinter', {
+        var Sprinter = proxyquire('../lib/sprinter', {
             'github': function () {
                 return mockGitHubInstance;
             }
@@ -444,7 +444,7 @@ describe('sprinter', function() {
             }
         };
 
-        var Sprinter = proxyquire('../sprinter', {
+        var Sprinter = proxyquire('../lib/sprinter', {
             'github': function () {
                 return mockGitHubInstance;
             }
